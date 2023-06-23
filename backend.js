@@ -9,11 +9,12 @@ const {body, validationResult} = require('express-validator');
 const app = express();
 
 const db = new Client({
-    host: 'localhost',
-    port: 5432,
+    host: 'app-43e769b3-e8b1-4072-b097-9e5a2dea2499-do-user-14279801-0.b.db.ondigitalocean.com',
+    port: 25060,
     database: 'db',
     user: 'postgres',
-    password: '123',
+    password: 'AVNS_4nGzk_rvlc2iSD5Kj9t',
+    sslmode: 'require'
 });
 
 app.use(cors());
