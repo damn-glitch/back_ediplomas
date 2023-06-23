@@ -11,6 +11,7 @@
     "sqlite3": "^5.1.6"
   },
   "scripts": {
-    "build:digitalocean": "npm install --production=false && npm run build && npm ci"
+    "build:digitalocean": "npm install --production=false && npm run build && npm ci",
+    "start:digitalocean": "npm run start"
   }
 }
