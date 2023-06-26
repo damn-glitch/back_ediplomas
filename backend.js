@@ -15,14 +15,14 @@ const { Pool } = require('pg');
 const caCert = fs.readFileSync('ca-certificate.crt');
 
 const db = new Client({
-    host: 'localhost',
-    port: 5432,
-    database: 'jas',
-    user: 'jasaim',
-    password: 'jasaim7182',
-    // ssl: {
-    //     ca: caCert,
-    //   },
+    host: 'app-43e769b3-e8b1-4072-b097-9e5a2dea2499-do-user-14279801-0.b.db.ondigitalocean.com',
+    port: 25060,
+    database: 'db',
+    user: 'db',
+    password: 'AVNS_ggbxdEEyvuBkDaQeqFQ',
+    ssl: {
+        ca: caCert,
+    },
 });
 
 app.use(cors());
