@@ -339,7 +339,7 @@ app.post('/get-otp', async (req, res) => {
       res.json({ message: 'OTP sent successfully' });
     } catch (error) {
       console.error('Error sending OTP:', error);
-      res.status(500).json({ error: 'Failed to send OTP' });
+      res.status(500).json({ error: 'Failed to send OTP.' + " Error:" + error });
     }
   });
 
