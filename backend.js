@@ -93,6 +93,22 @@ db.connect()
                 console.error('Error creating graduates table:', error);
             });
 
+        db.query(`
+            CREATE TABLE IF NOT EXISTS otp_table
+            (
+              id SERIAL PRIMARY KEY,
+              email TEXT,
+              otp TEXT,
+              created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            )
+        `)
+            .then(() => {
+              console.log('OTP table created or already exists');
+            })
+            .catch((error) => {
+              console.error('Error creating OTP table:', error);
+            });
+
         // Start the server
         const port = 8080;
         app.listen(port, () => {
@@ -295,3 +311,64 @@ app.get('/search/:metadata', authenticate, async (req, res) => {
         res.status(500).send('Error searching graduates.');
     }
 });
+
+
+// Endpoint to generate and send OTP
+app.post('/get-otp', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+      const otp = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+      const url = 'https://api.elasticemail.com/v2/email/send';
+      const apiKey = '269E440A75CE8313CAC9E266D2CA62DFE024880F89428750C42FA3D1062DD89CE2D7DD1648897EC9E41DFE9AB3F8D0F0';
+
+      const data = {
+        apikey: apiKey,
+        subject: 'Pin code to log in: ' + otp,
+        from: 'info@jasaim.kz',
+        bodyText: 'Use it to authenticate on Unipass',
+        to: 'nurikwy@gmail.com'
+      };
+
+      const response = await axios.post(url, data);
+      console.log(response.data);
+
+      // Store the OTP in the database (you can modify this code according to your database structure)
+      await db.query('INSERT INTO otp_table (email, otp) VALUES ($1, $2)', [email, otp]);
+
+      res.json({ message: 'OTP sent successfully' });
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      res.status(500).json({ error: 'Failed to send OTP' });
+    }
+  });
+
+  // Endpoint to verify OTP
+  app.post('/verify-otp', async (req, res) => {
+    const { email, code } = req.body;
+
+    try {
+      // Retrieve the last OTP for the provided email from the otp_table
+      const otpResult = await db.query(
+        'SELECT otp FROM otp_table WHERE email = $1 ORDER BY created_at DESC LIMIT 1',
+        [email]
+      );
+
+      if (otpResult.rows.length === 0) {
+        return res.status(400).json({ error: 'OTP not found' });
+      }
+
+      const lastOTP = otpResult.rows[0].otp;
+
+      if (code === lastOTP) {
+        // OTP is valid
+        return res.json({ message: 'OTP verified successfully' });
+      } else {
+        // OTP is invalid
+        return res.status(400).json({ error: 'Invalid OTP' });
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      res.status(500).json({ error: 'Failed to verify OTP' });
+    }
+  });
