@@ -326,7 +326,7 @@ app.post('/get-otp', async (req, res) => {
         apikey: apiKey,
         subject: 'Pin code to log in: ' + otp,
         from: 'info@jasaim.kz',
-        bodyText: 'Use it to authenticate on Unipass',
+        bodyText: 'Use it to authenticate on E-Diplomas',
         to: email
       };
 
@@ -336,7 +336,7 @@ app.post('/get-otp', async (req, res) => {
       // Store the OTP in the database (you can modify this code according to your database structure)
       await db.query('INSERT INTO otp_table (email, otp) VALUES ($1, $2)', [email, otp]);
 
-      res.json({ message: 'OTP sent successfully' });
+      res.json({ message: 'OTP sent successfully' + response.data });
     } catch (error) {
       console.error('Error sending OTP:', error);
       res.status(500).json({ error: 'Failed to send OTP.' + " Error:" + error });
