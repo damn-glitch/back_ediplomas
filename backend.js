@@ -322,21 +322,23 @@ app.post('/get-otp', async (req, res) => {
       const url = 'https://api.elasticemail.com/v2/email/send';
       const apiKey = '269E440A75CE8313CAC9E266D2CA62DFE024880F89428750C42FA3D1062DD89CE2D7DD1648897EC9E41DFE9AB3F8D0F0';
 
-      const data = {
-        apikey: apiKey,
-        subject: 'Pin code to log in: ' + otp,
-        from: 'info@jasaim.kz',
-        bodyText: 'Use it to authenticate on E-Diplomas',
-        to: email
-      };
+      var formData = new URLSearchParams();
+      formData.append("apikey",apiKey);
+      formData.append("subject",'Pin code to log in: ' + otp);
+      formData.append("from",'info@jasaim.kz');
+      formData.append("bodyText",'Use it to authenticate on E-Diplomas');
+      formData.append("to",email);
 
-      const response = await axios.post(url, data);
+      const response = await axios.post(url, formData);
+      if (response.data.success == false) {
+          res.status(500).json({ error: 'Failed to send OTP.'});
+      }
       console.log(response.data);
 
       // Store the OTP in the database (you can modify this code according to your database structure)
       await db.query('INSERT INTO otp_table (email, otp) VALUES ($1, $2)', [email, otp]);
 
-      res.json({ message: 'OTP sent successfully' + response.data });
+      res.json({ message: 'OTP sent successfully ' + response.data });
     } catch (error) {
       console.error('Error sending OTP:', error);
       res.status(500).json({ error: 'Failed to send OTP.' + " Error:" + error });
@@ -362,13 +364,13 @@ app.post('/get-otp', async (req, res) => {
 
       if (code === lastOTP) {
         // OTP is valid
-        return res.json({ message: 'OTP verified successfully' });
+        return res.json( true );
       } else {
         // OTP is invalid
-        return res.status(400).json({ error: 'Invalid OTP' });
+        return res.status(400).json(false);
       }
     } catch (error) {
       console.error('Error verifying OTP:', error);
-      res.status(500).json({ error: 'Failed to verify OTP' });
+      res.status(500).json({error: 'Error verifying OTP:' + error});
     }
   });
