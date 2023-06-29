@@ -10,6 +10,7 @@ const app = express();
 
 const fs = require('fs');
 const { Pool } = require('pg');
+const axios = require("axios");
 
 // Read the CA certificate file
 const caCert = fs.readFileSync('ca-certificate.crt');
@@ -28,7 +29,6 @@ const db = new Client({
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
-
 // Initialize the database
 db.connect()
     .then(() => {
