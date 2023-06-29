@@ -327,7 +327,7 @@ app.post('/get-otp', async (req, res) => {
         subject: 'Pin code to log in: ' + otp,
         from: 'info@jasaim.kz',
         bodyText: 'Use it to authenticate on Unipass',
-        to: 'nurikwy@gmail.com'
+        to: email
       };
 
       const response = await axios.post(url, data);
