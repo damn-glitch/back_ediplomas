@@ -47,7 +47,7 @@ db.connect()
                     db.query(`
                         INSERT INTO roles
                         VALUES (1, 'employer'),
-                               (2, 'administration')
+                               (2, 'student')
                     `)
                         .then(() => {
                             console.log('Graduates table created or already exists');
@@ -83,8 +83,32 @@ db.connect()
             });
 
         db.query(`
+            CREATE TABLE IF NOT EXISTS universities
+            (
+                id SERIAL PRIMARY KEY,  
+                name TEXT, 
+                city TEXT, 
+            )
+        `)
+            .then(() => {
+                console.log('Universities table created or already exists');
+            })
+            .catch((error) => {
+                console.error('Error creating universities table:', error);
+            });
+
+
+        db.query(`
             CREATE TABLE IF NOT EXISTS graduates
-            (id SERIAL PRIMARY KEY, name TEXT, major TEXT, diploma_id INTEGER)
+            (
+                id SERIAL PRIMARY KEY, 
+                fullName TEXT, 
+                major TEXT, 
+                IIN TEXT,
+                university INT,
+                constraint fk_university_id foreign key (university_id)
+                references universities(id)
+            )
         `)
             .then(() => {
                 console.log('Graduates table created or already exists');
