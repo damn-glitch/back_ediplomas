@@ -11,8 +11,6 @@ const app = express();
 const fs = require('fs');
 const {Pool} = require('pg');
 const axios = require("axios");
-var XLSX = require("xlsx");
-// Read the CA certificate file
 const caCert = fs.readFileSync('ca-certificate.crt');
 
 const db = new Client({
@@ -34,8 +32,8 @@ db.connect()
     .then(() => {
         console.log('Connected to the PostgreSQL database');
         // db.query(`drop table if exists users`)
-        // db.query(`drop table if exists graduates`)
-        // db.query(`drop table if exists universities`)
+        // db.query(`drop table if exists graduates`);
+        // db.query(`drop table if exists universities`);
         // db.query(`drop table otp_table`)
 
         // Initialize the database
@@ -54,17 +52,17 @@ db.connect()
                                (2, 'student')
                     `)
                         .then(() => {
-                            console.log('Graduates table created or already exists');
+                            console.log('Roles table created or already exists');
                         })
                         .catch((error) => {
-                            console.error('Error creating graduates table:', error);
+                            console.error('Error creating Roles table:', error);
                         });
                 }
 
 
             })
             .catch((error) => {
-                console.error('Error creating graduates table:', error);
+                console.error('Error creating Roles table:', error);
             });
         db.query(`
             CREATE TABLE IF NOT EXISTS users
@@ -73,6 +71,7 @@ db.connect()
                 email TEXT UNIQUE,
                 password TEXT,
                 company_name TEXT,
+                email_validated BOOL,
                 role_id INT,
                 constraint fk_user_role foreign key (role_id)
                 references roles(id)
@@ -85,7 +84,6 @@ db.connect()
             .catch((error) => {
                 console.error('Error creating users table:', error);
             });
-
         db.query(`
             CREATE TABLE IF NOT EXISTS universities
             (
@@ -95,6 +93,8 @@ db.connect()
             )
         `)
             .then(() => {
+                // db.query(`insert into universities
+                //           values (1, 'KBTU', 'Алматы')`)
                 console.log('Universities table created or already exists');
             })
             .catch((error) => {
@@ -105,12 +105,17 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS graduates
             (
-                id SERIAL PRIMARY KEY,
-                fullName TEXT,
-                major TEXT,
-                IIN TEXT,
+                id SERIAL PRIMARY KEY, 
+                fullNameEng TEXT, 
+                fullNameKz TEXT, 
+                major TEXT, 
+                speciality TEXT, 
+                IIN TEXT, 
                 university_id INT,
-                constraint fk_university_id foreign key(university_id)
+                gpa FLOAT, 
+                year INT, 
+                region TEXT, 
+                constraint fk_university_id foreign key (university_id)
                 references universities(id)
                 )
         `)
@@ -295,153 +300,64 @@ app.post('/login', async (req, res) => {
 });
 
 // parse and insert to db route
-app.get('/insert', async (req, res) => {
-    // let link = "ipfs://bafybeidbedhhugo2nck5b7x5edxgpflnigwsj4jqf2gx24ddm5jvske7cu/fullMetadata.json";
-    // link = link.replace("ipfs://", "https://ipfs.io/ipfs/");
-    //
-    // const response = await axios.get(link);
-    // let newData = [];
-    // for (const element of response.data) {
-    //     let dict = {};
-    //     Object.entries(element).forEach((k) => {
-    //         const key = k[0];
-    //         const value = k[1];
-    //         if (key !== "attributes") {
-    //             dict[key] = value;
-    //         } else {
-    //             (value).forEach((attr) => {
-    //                 dict[attr["name"]] = attr["value"];
-    //             });
-    //         }
-    //     });
-    //
-    //     newData.push(dict);
-    // }
-    // res.send(newData)
-
-    // try {
-    //     // Check if the user exists
-    //     const user = await db.query('SELECT * FROM users inner join roles on users.role_id = roles.id WHERE email = $1', [email]);
-    //
-    //     if (user.rows.length === 0) {
-    //         return res.status(400).send('Invalid email or password.');
-    //     }
-    //     // Verify the password
-    //     const validPassword = await bcrypt.compare(password, user.rows[0].password);
-    //     if (!validPassword) {
-    //         return res.status(400).send('Invalid email or password.');
-    //     }
-    //     if (!user.rows[0].email_verified) {
-    //         return res.status(400).send('Email has not been verified');
-    //     }
-    //
-    //     // Create a new JWT token
-    //     const token = jwt.sign({id: user.rows[0].id}, 'jwtPrivateKey');
-    //     res.header('x-auth-token', token).send({
-    //         id: user.rows[0].id,
-    //         email: user.rows[0].email,
-    //         companyName: user.rows[0].company_name,
-    //         role: user.rows[0].name,
-    //         token: token
-    //     });
-    // } catch (error) {
-    //     console.error('Error logging in:', error);
-    //     res.status(500).send('Error logging in.');
-    // }
+app.get('/dont-touch-this', async (req, res) => {
     // db.query(`drop table if exists temp_table`)
-    db.query(`
-            CREATE TABLE IF NOT EXISTS temp_table
-            (
-                id serial primary key
-                col1 TEXT,
-                col2 TEXT,
-                col3 TEXT,
-                col4 TEXT,
-                col5 TEXT,
-                col6 TEXT,
-                col7 TEXT,
-                col8 TEXT,
-                col9 TEXT,
-                col10 TEXT,
-                col11 TEXT,
-                col12 TEXT,
-                col13 TEXT,
-                col14 TEXT,
-                col15 TEXT,
-                col16 TEXT,
-                col17 TEXT,
-                col18 TEXT,
-                col19 TEXT,
-                col20 TEXT,
-                col21 TEXT,
-                col22 TEXT,
-                col23 TEXT,
-                col24 TEXT,
-                col25 TEXT,
-                col26 TEXT,
-                col27 TEXT,
-                col28 TEXT
-            )
-        `)
-            .then(() => {
+    const file = require('./data_back.json');
+    for (let i = 0; i < file.length; i++) {
+        let fullname_kz = (file[i]["Fullname_kz"]).trim();
+        let Fullname_en = (file[i]["Fullname_eng"]).trim();
+        let year = (file[i]["Year"].split(", ")[1]).trim();
+        if (!year || year == "" || year == "-") {
+            year = 0;
+        } else {
+            year = parseInt(year);
+        }
+        let degree = (file[i]["Degree"].split(" степень ")[1]).trim();
+        let speciality = (file[i]["speciality"].split("«")[1].split("»")[0]).trim();
+        let gpa = (file[i]["GPA"] ?? "");
+        if (!gpa || gpa == "" || gpa == "-") {
+            gpa = 0;
+        } else {
+            gpa = parseFloat(gpa);
+        }
 
-                console.log('temp_table table created or already exists');
-            })
-            .catch((error) => {
-                console.error('Error creating temp_table table:', error);
-            });
-    const workbook = XLSX.readFile('data_with_gpa.xlsx');
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+        let iin = (file[i]["IIN"] ?? "").toString();
+        let region = ((file[i]["Region"] && file[i]["Region"].length > 3) ? file[i]["Region"] && file[i]["Region"] : file[i]["Region2"]) ?? "";
 
-    const tableName = 'temp_table';
-
-    for (let i = 1; i < jsonData.length; i++) {
-        const row = jsonData[i];
-        console.log(jsonData[i])
-        const query = `INSERT INTO ${tableName} 
-        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const query =
+            `INSERT INTO graduates 
+            (fullNameEng, fullNameKz, major, speciality, IIN, university_id, gpa, year, region) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
         const values = [
-            row[0] ?? '',
-            row[1] ?? '',
-            row[2] ?? '',
-            row[3] ?? '',
-            row[4] ?? '',
-            row[5] ?? '',
-            row[6] ?? '',
-            row[7] ?? '',
-            row[8] ?? '',
-            row[9] ?? '',
-            row[10] ?? '',
-            row[11] ?? '',
-            row[12] ?? '',
-            row[13] ?? '',
-            row[14] ?? '',
-            row[15] ?? '',
-            row[16] ?? '',
-            row[17] ?? '',
-            row[18] ?? '',
-            row[19] ?? '',
-            row[20] ?? '',
-            row[21] ?? '',
-            row[22] ?? '',
-            row[23] ?? '',
-            row[24] ?? '',
-            row[25] ?? '',
-            row[26] ?? '',
-            row[27] ?? '',
-            row[28] ?? ''
-        ]; // Replace column1, column2, column3 with your actual column names
-
+            Fullname_en,
+            fullname_kz,
+            degree,
+            speciality,
+            iin,
+            1,
+            gpa,
+            year,
+            region
+        ];
         db.query(query, values, (err, result) => {
             if (err) {
+
+                console.log(fullname_kz);
+                console.log(Fullname_en);
+                console.log(year);
+                console.log(degree);
+                console.log(speciality);
+                console.log(gpa);
+                console.log(iin);
+                console.log(region);
+                console.log("--------------------------------")
                 console.error('Error inserting data:', err);
                 return;
             }
-            console.log('Data inserted successfully!');
+            console.log( i + ': Data inserted successfully!');
         });
-    }
 
+    }
 });
 
 // Account route (authenticated)
@@ -500,7 +416,7 @@ app.get('/graduates', authenticate, async (req, res) => {
 });
 
 // Search graduates by metadata (authenticated)
-app.get('/search/', async (req, res) => {
+app.get('/search', async (req, res) => {
     const name = req.query.name;
     const gpaL = req.query.gpaL;
     const gpaR = req.query.gpaR;
@@ -516,10 +432,10 @@ app.get('/search/', async (req, res) => {
     }
     try {
         let searchResult;
-        db_query = `SELECT IIN
-        FROM graduates
-        INNER JOIN universities
-        ON graduates.university_id = universities.id
+        db_query = `SELECT fullNameEng
+                    FROM graduates
+                    INNER JOIN universities
+                    ON graduates.university_id = universities.id
                     WHERE `;
         let has_filters = false;
         for (const [key, value] of Object.entries(query_dict)) {
@@ -542,7 +458,7 @@ app.get('/search/', async (req, res) => {
                     break;
                 }
                 case "region": {
-                    db_query += `region = $1.region AND `;
+                    db_query += `region LIKE $1.region AND `;
                     break;
                 }
                 case "year": {
@@ -560,7 +476,7 @@ app.get('/search/', async (req, res) => {
         db_query = db_query.substring(0, db_query.length - 4)
         searchResult = await db.query(
             db_query,
-            [`%${query_dict}%`]
+            [query_dict]
         );
         res.send(searchResult.rows);
 
