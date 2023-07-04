@@ -219,7 +219,7 @@ app.post(
 
             // Save the new user
             const newUser = await db.query(
-                'INSERT INTO users (email, password, company_name, role_id, email_verified) VALUES ($1, $2, $3, 1, false) RETURNING *',
+                'INSERT INTO users (email, password, company_name, role_id, email_validated) VALUES ($1, $2, $3, 1, false) RETURNING *',
                 [email, hashedPassword, companyName]
             );
 
@@ -276,11 +276,12 @@ app.post('/login', async (req, res) => {
             return res.status(400).send('Invalid email or password.');
         }
         // Verify the password
+        const emailValidated = user.rows[0].email_validated
         const validPassword = await bcrypt.compare(password, user.rows[0].password);
         if (!validPassword) {
             return res.status(400).send('Invalid email or password.');
         }
-        if (!user.rows[0].email_verified) {
+        if (!user.rows[0].email_validated) {
             return res.status(400).send('Email has not been verified');
         }
 
