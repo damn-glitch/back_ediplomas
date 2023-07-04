@@ -420,52 +420,57 @@ app.get('/search', async (req, res) => {
     const name = req.query.name;
     const gpaL = req.query.gpaL;
     const gpaR = req.query.gpaR;
-    const major = req.query.major;
+    const speciality = req.query.speciality;
     const region = req.query.region;
     const year = req.query.year;
+
     const query_dict = {
-        "name": name ?? "",
-        "gpa": gpaL && gpaR ? [gpaL, gpaR] : "",
-        "major": major ?? "",
-        "region": region ?? "",
-        "year": year ?? ""
-    }
+        name: name ?? "",
+        gpa: gpaL && gpaR ? [parseFloat(gpaL), parseFloat(gpaR)] : null,
+        speciality: speciality ?? "",
+        region: region ?? "",
+        year: year ?? ""
+    };
+
     try {
         let searchResult;
-        db_query = `SELECT fullNameEng
-                    FROM graduates
-                    INNER JOIN universities
-                    ON graduates.university_id = universities.id
-                    WHERE `;
+        let db_query = `SELECT fullNameEng
+                        FROM graduates
+                                 INNER JOIN universities ON graduates.university_id = universities.id
+                        WHERE `;
+        const queryValues = [];
+
         let has_filters = false;
+        let parameterIndex = 1;
+
         for (const [key, value] of Object.entries(query_dict)) {
-            if (value == "" && value.length == 0) {
+            if (value === null || value === "") {
                 continue;
             }
             has_filters = true;
             console.log(value);
             switch (key) {
-                case "name": {
-                    db_query += `fullName LIKE $1.name AND `;
+                case "name":
+                    db_query += `fullNameKz LIKE $${parameterIndex++} AND `;
+                    queryValues.push(`%${value}%`);
                     break;
-                }
-                case "gpa": {
-                    db_query += `gpa > $1.gpa[0] AND gpa < $1.gpa[1] AND `;
+                case "gpa":
+                    db_query += `gpa > $${parameterIndex++} AND gpa < $${parameterIndex++} AND `;
+                    queryValues.push(value[0]);
+                    queryValues.push(value[1]);
                     break;
-                }
-                case "major": {
-                    db_query += `major = $1.major AND `;
+                case "speciality":
+                    db_query += `speciality LIKE $${parameterIndex++} AND `;
+                    queryValues.push(`%${value}%`);
                     break;
-                }
-                case "region": {
-                    db_query += `region LIKE $1.region AND `;
+                case "region":
+                    db_query += `region LIKE $${parameterIndex++} AND `;
+                    queryValues.push(`%${value}%`);
                     break;
-                }
-                case "year": {
-                    db_query += `year = $1.year AND `;
+                case "year":
+                    db_query += `year = $${parameterIndex++} AND `;
+                    queryValues.push(value);
                     break;
-                }
-
             }
         }
 
@@ -473,18 +478,16 @@ app.get('/search', async (req, res) => {
             res.status(403).send('Bad Request');
             return;
         }
-        db_query = db_query.substring(0, db_query.length - 4)
-        searchResult = await db.query(
-            db_query,
-            [query_dict]
-        );
-        res.send(searchResult.rows);
 
+        db_query = db_query.substring(0, db_query.length - 5);
+        searchResult = await db.query(db_query, queryValues);
+        res.send(searchResult.rows);
     } catch (error) {
         console.error('Error searching graduates:', error);
         res.status(500).send('Error searching graduates.');
     }
 });
+
 
 
 // Endpoint to generate and send OTP
