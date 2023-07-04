@@ -39,7 +39,14 @@ db.connect()
         // Initialize the database
         db.query(`
             CREATE TABLE IF NOT EXISTS roles
-            (id SERIAL PRIMARY KEY, name TEXT);
+            (
+                id
+                SERIAL
+                PRIMARY
+                KEY,
+                name
+                TEXT
+            );
         `)
             .then(async () => {
                 console.log('Roles table created or already exists');
@@ -87,9 +94,14 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS universities
             (
-                id SERIAL PRIMARY KEY,  
-                name TEXT, 
-                city TEXT
+                id
+                SERIAL
+                PRIMARY
+                KEY,
+                name
+                TEXT,
+                city
+                TEXT
             )
         `)
             .then(() => {
@@ -105,18 +117,39 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS graduates
             (
-                id SERIAL PRIMARY KEY, 
-                fullNameEng TEXT, 
-                fullNameKz TEXT, 
-                major TEXT, 
-                speciality TEXT, 
-                IIN TEXT, 
-                university_id INT,
-                gpa FLOAT, 
-                year INT, 
-                region TEXT, 
-                constraint fk_university_id foreign key (university_id)
-                references universities(id)
+                id
+                SERIAL
+                PRIMARY
+                KEY,
+                fullNameEng
+                TEXT,
+                fullNameKz
+                TEXT,
+                major
+                TEXT,
+                speciality
+                TEXT,
+                IIN
+                TEXT,
+                university_id
+                INT,
+                gpa
+                FLOAT,
+                year
+                INT,
+                region
+                TEXT,
+                constraint
+                fk_university_id
+                foreign
+                key
+            (
+                university_id
+            )
+                references universities
+            (
+                id
+            )
                 )
         `)
             .then(() => {
@@ -129,10 +162,18 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS otp_table
             (
-              id SERIAL PRIMARY KEY,
-              email TEXT,
-              otp TEXT,
-              created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+                id
+                SERIAL
+                PRIMARY
+                KEY,
+                email
+                TEXT,
+                otp
+                TEXT,
+                created_at
+                TIMESTAMPTZ
+                DEFAULT
+                CURRENT_TIMESTAMP
             )
         `)
             .then(() => {
@@ -355,7 +396,7 @@ app.get('/dont-touch-this', async (req, res) => {
                 console.error('Error inserting data:', err);
                 return;
             }
-            console.log( i + ': Data inserted successfully!');
+            console.log(i + ': Data inserted successfully!');
         });
 
     }
@@ -488,10 +529,47 @@ app.get('/search', async (req, res) => {
         res.status(500).send('Error searching graduates.');
     }
 });
+app.get('/validate-iin', async (req, res) => {
+    let name = req.query.name;
+    let iin = req.query.iin;
 
+    try {
+        let searchResult;
+        let db_query = `SELECT fullNameEng
+                        FROM graduates 
+                        WHERE `;
+        const queryValues = [];
+        let has_filters = false;
+        if (name && name.trim() != "" && iin && iin.trim() != "") {
+            has_filters = true;
+        }
+        name = name.trim();
+        iin = iin.toString().trim();
+        db_query += `fullNameEng LIKE $1 AND `;
+        queryValues.push(`%${name}%`);
+        db_query += `iin = $2`;
+        queryValues.push(iin);
+
+        if (!has_filters) {
+            return res.status(403).send('Bad Request');
+        }
+        searchResult = await db.query(db_query, queryValues);
+        if (searchResult.rows.length == 0) {
+            return res.json(false);
+        }
+
+        return res.json(true);
+
+    } catch (error) {
+        console.error('Error validating IIN:', error);
+        res.status(500).send('Error validating IIN.');
+    }
+    return res.json(false);
+});
 
 
 // Endpoint to generate and send OTP
+
 app.post('/get-otp', async (req, res) => {
     const {email} = req.body;
 
