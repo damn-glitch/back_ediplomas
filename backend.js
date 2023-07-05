@@ -208,7 +208,7 @@ function authenticate(req, res, next) {
 }
 
 const restrictedDomains = [
-    // 'gmail.com',
+    'gmail.com',
     'mail.ru',
     'outlook.com',
     'yahoo.com',
