@@ -469,9 +469,9 @@ app.get('/search', async (req, res) => {
     const query_dict = {
         name: name ?? "",
         gpa: gpaL && gpaR ? [parseFloat(gpaL), parseFloat(gpaR)] : null,
-        speciality: speciality ?? "",
-        region: region ?? "",
-        year: year ?? ""
+        speciality: speciality ? speciality.split(',') : "",
+        region: region ? region.split(',') : "",
+        year: year ? year.split(',') : ""
     };
 
     try {
@@ -502,16 +502,23 @@ app.get('/search', async (req, res) => {
                     queryValues.push(value[1]);
                     break;
                 case "speciality":
-                    db_query += `speciality LIKE $${parameterIndex++} AND `;
-                    queryValues.push(`%${value}%`);
-                    break;
                 case "region":
-                    db_query += `region LIKE $${parameterIndex++} AND `;
-                    queryValues.push(`%${value}%`);
+                    if (Array.isArray(value)) {
+                        db_query += `(${value.map((_, i) => `${key} LIKE $${parameterIndex++}`).join(" OR ")}) AND `;
+                        queryValues.push(...value.map(v => `%${v}%`));
+                    } else {
+                        db_query += `${key} LIKE $${parameterIndex++} AND `;
+                        queryValues.push(`%${value}%`);
+                    }
                     break;
                 case "year":
-                    db_query += `year = $${parameterIndex++} AND `;
-                    queryValues.push(value);
+                    if (Array.isArray(value)) {
+                        db_query += `(${value.map((_, i) => `${key} = $${parameterIndex++}`).join(" OR ")}) AND `;
+                        queryValues.push(...value);
+                    } else {
+                        db_query += `${key} = $${parameterIndex++} AND `;
+                        queryValues.push(value);
+                    }
                     break;
             }
         }
@@ -529,6 +536,8 @@ app.get('/search', async (req, res) => {
         res.status(500).send('Error searching graduates.');
     }
 });
+
+
 app.get('/validate-iin', async (req, res) => {
     let name = req.query.name;
     let iin = req.query.iin;
