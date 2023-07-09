@@ -40,37 +40,33 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS roles
             (
-                id
-                SERIAL
-                PRIMARY
-                KEY,
-                name
-                TEXT
+                id SERIAL PRIMARY KEY,
+                name TEXT
             );
         `)
-            .then(async () => {
-                console.log('Roles table created or already exists');
-                const roles = await db.query(`SELECT *
-                                              from roles`)
-                if (roles.rows.length === 0) {
-                    db.query(`
-                        INSERT INTO roles
-                        VALUES (1, 'employer'),
-                               (2, 'student')
-                    `)
-                        .then(() => {
-                            console.log('Roles table created or already exists');
-                        })
-                        .catch((error) => {
-                            console.error('Error creating Roles table:', error);
-                        });
-                }
+        .then(async () => {
+            console.log('Roles table created or already exists');
+            const roles = await db.query(`SELECT * FROM roles`);
+            if (roles.rows.length === 0) {
+                db.query(`
+                    INSERT INTO roles
+                    VALUES
+                    (1, 'employer'),
+                    (2, 'student'),
+                    (3, 'university admission')
+                `)
+                .then(() => {
+                    console.log('Roles table created or already exists');
+                })
+                .catch((error) => {
+                    console.error('Error creating Roles table:', error);
+                });
+            }
+        })
+        .catch((error) => {
+            console.error('Error creating Roles table:', error);
+        });
 
-
-            })
-            .catch((error) => {
-                console.error('Error creating Roles table:', error);
-            });
         db.query(`
             CREATE TABLE IF NOT EXISTS users
             (
@@ -336,7 +332,10 @@ app.post('/login', async (req, res) => {
         }
 
         // Create a new JWT token
-        const token = jwt.sign({id: user.rows[0].id}, 'jwtPrivateKey');
+        const token = jwt.sign({
+            id: user.rows[0].id,
+            role: user.rows[0].name // Include the user's role in the token payload
+        }, 'jwtPrivateKey');
         res.header('x-auth-token', token).send({
             id: user.rows[0].id,
             email: user.rows[0].email,
@@ -445,12 +444,29 @@ app.get('/graduate-details', authenticate, async (req, res) => {
 })
 app.get('/account', authenticate, async (req, res) => {
     try {
-        const user = await db.query('SELECT id, email, company_name FROM users inner join roles on users.role_id = roles.id WHERE id = $1 ', [
-            req.user.id,
-        ]);
+        const user = await db.query(`
+            SELECT id, email, company_name, role_id
+            FROM users
+            INNER JOIN roles ON users.role_id = roles.id
+            WHERE id = $1
+        `, [req.user.id]);
 
         if (user.rows.length > 0) {
-            res.send(user.rows[0]);
+            const userData = {
+                id: user.rows[0].id,
+                email: user.rows[0].email,
+                companyName: user.rows[0].company_name
+            };
+
+            // Check the user's role
+            if (user.rows[0].role_id === 3) {
+                // User has the "university admission" role
+                userData.analyticsButton = true;
+            } else {
+                userData.analyticsButton = false;
+            }
+
+            res.send(userData);
         } else {
             res.status(404).send('User not found.');
         }
@@ -459,6 +475,7 @@ app.get('/account', authenticate, async (req, res) => {
         res.status(500).send('Error fetching user account.');
     }
 });
+
 
 // Update account route (authenticated)
 app.put('/account', authenticate, async (req, res) => {
