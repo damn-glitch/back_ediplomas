@@ -208,7 +208,7 @@ function authenticate(req, res, next) {
 }
 
 const restrictedDomains = [
-    'gmail.com',
+    // 'gmail.com',
     'mail.ru',
     'outlook.com',
     'yahoo.com',
@@ -292,9 +292,9 @@ app.post(
 
             var formData = new URLSearchParams();
             formData.append("apikey", apiKey);
-            formData.append("subject", 'Pin code to log in: ' + otp);
+            formData.append("subject", 'Validation pin code: ' + otp);
             formData.append("from", 'info@jasaim.kz');
-            formData.append("bodyText", 'Use it to authenticate on E-Diplomas');
+            formData.append("bodyHtml", 'Use it to authenticate on E-Diplomas');
             formData.append("to", email);
 
             const response = await axios.post(url, formData);
@@ -629,9 +629,9 @@ app.post('/get-otp', async (req, res) => {
 
         var formData = new URLSearchParams();
         formData.append("apikey", apiKey);
-        formData.append("subject", 'Pin code to log in: ' + otp);
+        formData.append("subject", 'Validation pin code: ' + otp);
         formData.append("from", 'info@jasaim.kz');
-        formData.append("bodyText", 'Use it to authenticate on E-Diplomas');
+        formData.append("bodyHtml", 'Use it to authenticate on E-Diplomas');
         formData.append("to", email);
 
         const response = await axios.post(url, formData);
@@ -746,13 +746,14 @@ app.post(
                 return res.status(404).send('Email not found.');
             }
 
+
             // Hash the password
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
             //setting new password
-            db.query('UPDATE users WHERE id = $1 SET password = $2', [existingUser.rows['id'], hashedPassword]);
-
+            db.query('UPDATE users set password = $1 where id = $2', [hashedPassword, existingUser.rows[0]['id']]);
+            res.send("success")
         } catch (error) {
             console.error('Error reseting password:', error);
             res.status(500).send('Error reseting password.');
