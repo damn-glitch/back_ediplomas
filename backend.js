@@ -234,13 +234,13 @@ app.post(
             .withMessage('Password must be at least 6 characters long.'),
         body('repassword')
             .notEmpty()
-            .withMessage('Passwords are not the same.')
             .custom((value, {req}) => {
                 if (value !== req.body.password) {
                     return false;
                 }
                 return true;
-            }),
+            })
+            .withMessage('Passwords are not the same.'),
         body('companyName').notEmpty().withMessage('Company name is required.'),
     ],
     async (req, res) => {
@@ -269,13 +269,6 @@ app.post(
                 [email, hashedPassword, companyName]
             );
 
-            // Create a new JWT token
-            // const token = jwt.sign({id: newUser.rows[0].id}, 'jwtPrivateKey');
-            // res.header('x-auth-token', token).send({
-            //     id: newUser.rows[0].id,
-            //     email,
-            //     companyName,
-            // });
         } catch (error) {
             console.error('Error registering the user:', error);
             res.status(500).send('Error registering the user.');
@@ -302,7 +295,7 @@ app.post(
             // Store the OTP in the database (you can modify this code according to your database structure)
             await db.query('INSERT INTO otp_table (email, otp) VALUES ($1, $2)', [email, otp]);
 
-            res.json({message: 'OTP sent successfully ' + response.data});
+            return res.json({message: 'OTP sent successfully ' + response.data});
         } catch (error) {
             console.error('Error sending OTP:', error);
             res.status(500).json({error: 'Failed to send OTP.' + " Error:" + error});
@@ -719,13 +712,13 @@ app.post(
             .withMessage('Password must be at least 6 characters long.'),
         body('repassword')
             .notEmpty()
-            .withMessage('Passwords are not the same.')
             .custom((value, {req}) => {
                 if (value !== req.body.password) {
                     return false;
                 }
                 return true;
-            }),
+            })
+            .withMessage('Passwords are not the same.'),
         body('code')
             .notEmpty()
             .withMessage('Verification code must not be empty.')
