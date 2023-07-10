@@ -492,7 +492,7 @@ app.get('/search', async (req, res) => {
     const name = req.query.name;
     const gpaL = req.query.gpaL;
     const gpaR = req.query.gpaR;
-    const speciality = req.query.speciality;
+    const speciality = req.query.specialities;
     const region = req.query.region;
     const year = req.query.year;
 
@@ -532,6 +532,15 @@ app.get('/search', async (req, res) => {
                     queryValues.push(value[1]);
                     break;
                 case "speciality":
+                    if (Array.isArray(value)) {
+                        db_query += `(${value.map((_, i) => `${key} LIKE $${parameterIndex++}`).join(" OR ")}) AND `;
+                        queryValues.push(...value.map(v => `%${v}%`));
+                    } else {
+                        db_query += `${key} LIKE $${parameterIndex++} AND `;
+                        queryValues.push(`%${value}%`);
+                    }
+                    console.log(queryValues);
+                    break;
                 case "region":
                     if (Array.isArray(value)) {
                         db_query += `(${value.map((_, i) => `${key} LIKE $${parameterIndex++}`).join(" OR ")}) AND `;
