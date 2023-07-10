@@ -40,37 +40,33 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS roles
             (
-                id
-                SERIAL
-                PRIMARY
-                KEY,
-                name
-                TEXT
+                id SERIAL PRIMARY KEY,
+                name TEXT
             );
         `)
-            .then(async () => {
-                console.log('Roles table created or already exists');
-                const roles = await db.query(`SELECT *
-                                              from roles`)
-                if (roles.rows.length === 0) {
-                    db.query(`
-                        INSERT INTO roles
-                        VALUES (1, 'employer'),
-                               (2, 'student')
-                    `)
-                        .then(() => {
-                            console.log('Roles table created or already exists');
-                        })
-                        .catch((error) => {
-                            console.error('Error creating Roles table:', error);
-                        });
-                }
+        .then(async () => {
+            console.log('Roles table created or already exists');
+            const roles = await db.query(`SELECT * FROM roles`);
+            if (roles.rows.length === 0) {
+                db.query(`
+                    INSERT INTO roles
+                    VALUES
+                    (1, 'employer'),
+                    (2, 'student'),
+                    (3, 'university admission')
+                `)
+                .then(() => {
+                    console.log('Roles table created or already exists');
+                })
+                .catch((error) => {
+                    console.error('Error creating Roles table:', error);
+                });
+            }
+        })
+        .catch((error) => {
+            console.error('Error creating Roles table:', error);
+        });
 
-
-            })
-            .catch((error) => {
-                console.error('Error creating Roles table:', error);
-            });
         db.query(`
             CREATE TABLE IF NOT EXISTS users
             (
@@ -94,14 +90,9 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS universities
             (
-                id
-                SERIAL
-                PRIMARY
-                KEY,
-                name
-                TEXT,
-                city
-                TEXT
+                id SERIAL PRIMARY KEY,
+                name TEXT,
+                city TEXT
             )
         `)
             .then(() => {
@@ -117,40 +108,22 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS graduates
             (
-                id
-                SERIAL
-                PRIMARY
-                KEY,
-                fullNameEng
-                TEXT,
-                fullNameKz
-                TEXT,
-                major
-                TEXT,
-                speciality
-                TEXT,
-                IIN
-                TEXT,
-                university_id
-                INT,
-                gpa
-                FLOAT,
-                year
-                INT,
-                region
-                TEXT,
-                constraint
-                fk_university_id
-                foreign
-                key
-            (
-                university_id
+                id SERIAL PRIMARY KEY,
+                fullNameEng TEXT,
+                fullNameKz TEXT,
+                major TEXT,
+                speciality TEXT,
+                IIN TEXT,
+                university_id INT,
+                gpa FLOAT,
+                year INT,
+                region TEXT,
+                mobile TEXT,
+                email TEXT,
+                constraint fk_university_id
+                foreign key (university_id)
+                references universities( id )
             )
-                references universities
-            (
-                id
-            )
-                )
         `)
             .then(() => {
                 console.log('Graduates table created or already exists');
@@ -162,18 +135,10 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS otp_table
             (
-                id
-                SERIAL
-                PRIMARY
-                KEY,
-                email
-                TEXT,
-                otp
-                TEXT,
-                created_at
-                TIMESTAMPTZ
-                DEFAULT
-                CURRENT_TIMESTAMP
+                id SERIAL PRIMARY KEY,
+                email TEXT,
+                otp TEXT,
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
             )
         `)
             .then(() => {
@@ -236,6 +201,15 @@ app.post(
         body('password')
             .isLength({min: 6})
             .withMessage('Password must be at least 6 characters long.'),
+        body('repassword')
+            .notEmpty()
+            .custom((value, {req}) => {
+                if (value !== req.body.password) {
+                    return false;
+                }
+                return true;
+            })
+            .withMessage('Passwords are not the same.'),
         body('companyName').notEmpty().withMessage('Company name is required.'),
     ],
     async (req, res) => {
@@ -264,13 +238,6 @@ app.post(
                 [email, hashedPassword, companyName]
             );
 
-            // Create a new JWT token
-            // const token = jwt.sign({id: newUser.rows[0].id}, 'jwtPrivateKey');
-            // res.header('x-auth-token', token).send({
-            //     id: newUser.rows[0].id,
-            //     email,
-            //     companyName,
-            // });
         } catch (error) {
             console.error('Error registering the user:', error);
             res.status(500).send('Error registering the user.');
@@ -283,9 +250,9 @@ app.post(
 
             var formData = new URLSearchParams();
             formData.append("apikey", apiKey);
-            formData.append("subject", 'Pin code to log in: ' + otp);
+            formData.append("subject", 'Validation pin code: ' + otp);
             formData.append("from", 'info@jasaim.kz');
-            formData.append("bodyText", 'Use it to authenticate on E-Diplomas');
+            formData.append("bodyHtml", 'Use it to authenticate on E-Diplomas');
             formData.append("to", email);
 
             const response = await axios.post(url, formData);
@@ -297,7 +264,7 @@ app.post(
             // Store the OTP in the database (you can modify this code according to your database structure)
             await db.query('INSERT INTO otp_table (email, otp) VALUES ($1, $2)', [email, otp]);
 
-            res.json({message: 'OTP sent successfully ' + response.data});
+            return res.json({message: 'OTP sent successfully ' + response.data});
         } catch (error) {
             console.error('Error sending OTP:', error);
             res.status(500).json({error: 'Failed to send OTP.' + " Error:" + error});
@@ -327,7 +294,10 @@ app.post('/login', async (req, res) => {
         }
 
         // Create a new JWT token
-        const token = jwt.sign({id: user.rows[0].id}, 'jwtPrivateKey');
+        const token = jwt.sign({
+            id: user.rows[0].id,
+            role: user.rows[0].name // Include the user's role in the token payload
+        }, 'jwtPrivateKey');
         res.header('x-auth-token', token).send({
             id: user.rows[0].id,
             email: user.rows[0].email,
@@ -345,7 +315,7 @@ app.post('/login', async (req, res) => {
 app.get('/dont-touch-this', async (req, res) => {
     // db.query(`drop table if exists temp_table`)
     const file = require('./data_back.json');
-    for (let i = 0; i < file.length; i++) {
+    for (let i = 540; i < file.length; i++) {
         let fullname_kz = (file[i]["Fullname_kz"]).trim();
         let Fullname_en = (file[i]["Fullname_eng"]).trim();
         let year = (file[i]["Year"].split(", ")[1]).trim();
@@ -365,11 +335,12 @@ app.get('/dont-touch-this', async (req, res) => {
 
         let iin = (file[i]["IIN"] ?? "").toString();
         let region = ((file[i]["Region"] && file[i]["Region"].length > 3) ? file[i]["Region"] && file[i]["Region"] : file[i]["Region2"]) ?? "";
-
+        let mobile = ((file[i]["mobile"] ? file[i]["mobile"] : "") ?? "");
+        let email = ((file[i]["email"] ? file[i]["email"]: "") ?? "");
         const query =
             `INSERT INTO graduates 
-            (fullNameEng, fullNameKz, major, speciality, IIN, university_id, gpa, year, region) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
+            (fullNameEng, fullNameKz, major, speciality, IIN, university_id, gpa, year, region, mobile, email) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`;
         const values = [
             Fullname_en,
             fullname_kz,
@@ -379,7 +350,9 @@ app.get('/dont-touch-this', async (req, res) => {
             1,
             gpa,
             year,
-            region
+            region,
+            mobile,
+            email,
         ];
         db.query(query, values, (err, result) => {
             if (err) {
@@ -392,6 +365,8 @@ app.get('/dont-touch-this', async (req, res) => {
                 console.log(gpa);
                 console.log(iin);
                 console.log(region);
+                console.log(mobile);
+                console.log(email);
                 console.log("--------------------------------")
                 console.error('Error inserting data:', err);
                 return;
@@ -403,14 +378,14 @@ app.get('/dont-touch-this', async (req, res) => {
 });
 
 // Account route (authenticated)
-app.get('/graduate-details', authenticate, async (req,res) => {
+app.get('/graduate-details', authenticate, async (req, res) => {
     try {
         const name = req.query.name;
         if (!name) {
             res.status(400).send('Field "name" is reqiured.')
             return;
         }
-        const user = await db.query('SELECT iin, gpa, region FROM graduates WHERE fullNameEng = $1 ', [
+        const user = await db.query('SELECT * FROM graduates WHERE fullNameEng = $1 ', [
             name,
         ]);
 
@@ -425,6 +400,12 @@ app.get('/graduate-details', authenticate, async (req,res) => {
             if (user.rows[0]['region'].length > 3) {
                 data.push({"value": user.rows[0]['region'], "label_en": "Region", "label_ru": "Регион"});
             }
+            if (user.rows[0]['mobile'].length > 3) {
+                data.push({"value": "+" + user.rows[0]['mobile'], "label_en": "Mobile", "label_ru": "Мобильный"});
+            }
+            if (user.rows[0]['email'].length > 3) {
+                data.push({"value": user.rows[0]['email'], "label_en": "Email", "label_ru": "Почта"});
+            }
             res.json(data);
         } else {
             res.status(404).send('Graduate not found.');
@@ -436,12 +417,29 @@ app.get('/graduate-details', authenticate, async (req,res) => {
 })
 app.get('/account', authenticate, async (req, res) => {
     try {
-        const user = await db.query('SELECT id, email, company_name FROM users inner join roles on users.role_id = roles.id WHERE id = $1 ', [
-            req.user.id,
-        ]);
+        const user = await db.query(`
+            SELECT id, email, company_name, role_id
+            FROM users
+            INNER JOIN roles ON users.role_id = roles.id
+            WHERE id = $1
+        `, [req.user.id]);
 
         if (user.rows.length > 0) {
-            res.send(user.rows[0]);
+            const userData = {
+                id: user.rows[0].id,
+                email: user.rows[0].email,
+                companyName: user.rows[0].company_name
+            };
+
+            // Check the user's role
+            if (user.rows[0].role_id === 3) {
+                // User has the "university admission" role
+                userData.analyticsButton = true;
+            } else {
+                userData.analyticsButton = false;
+            }
+
+            res.send(userData);
         } else {
             res.status(404).send('User not found.');
         }
@@ -450,6 +448,7 @@ app.get('/account', authenticate, async (req, res) => {
         res.status(500).send('Error fetching user account.');
     }
 });
+
 
 // Update account route (authenticated)
 app.put('/account', authenticate, async (req, res) => {
@@ -620,9 +619,9 @@ app.post('/get-otp', async (req, res) => {
 
         var formData = new URLSearchParams();
         formData.append("apikey", apiKey);
-        formData.append("subject", 'Pin code to log in: ' + otp);
+        formData.append("subject", 'Validation pin code: ' + otp);
         formData.append("from", 'info@jasaim.kz');
-        formData.append("bodyText", 'Use it to authenticate on E-Diplomas');
+        formData.append("bodyHtml", 'Use it to authenticate on E-Diplomas');
         formData.append("to", email);
 
         const response = await axios.post(url, formData);
@@ -673,3 +672,82 @@ app.post('/verify-otp', async (req, res) => {
         res.status(500).json({error: 'Error verifying OTP:' + error});
     }
 });
+
+
+// Password Reset route
+app.post(
+    '/password-reset',
+    [
+        body('email')
+            .isEmail()
+            .withMessage('Please enter a valid email address.')
+            .custom((value) => {
+                if (isRestrictedDomain(value)) {
+                    throw new Error('Registration with this email domain is not allowed.');
+                }
+                return true;
+            }),
+        body('password')
+            .isLength({min: 6})
+            .withMessage('Password must be at least 6 characters long.'),
+        body('repassword')
+            .notEmpty()
+            .custom((value, {req}) => {
+                if (value !== req.body.password) {
+                    return false;
+                }
+                return true;
+            })
+            .withMessage('Passwords are not the same.'),
+        body('code')
+            .notEmpty()
+            .withMessage('Verification code must not be empty.')
+    ],
+    async (req, res) => {
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json(errors);
+        }
+
+        const {email, password, code} = req.body;
+
+        try {
+            //validating otp code
+            const otpResult = await db.query(
+                'SELECT otp FROM otp_table WHERE email = $1 ORDER BY created_at DESC LIMIT 1',
+                [email]
+            );
+
+            if (otpResult.rows.length === 0) {
+                return res.status(400).json({error: 'OTP not found'});
+            }
+
+            const lastOTP = otpResult.rows[0].otp;
+
+            if (code !== lastOTP) {
+                return res.status(400).json({error: "Invalid verification code"})
+            }
+
+            // Check if the user exists
+            const existingUser = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+
+            if (existingUser.rows.length == 0) {
+                return res.status(404).send('Email not found.');
+            }
+
+
+            // Hash the password
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+
+            //setting new password
+            db.query('UPDATE users set password = $1 where id = $2', [hashedPassword, existingUser.rows[0]['id']]);
+            res.send("success")
+        } catch (error) {
+            console.error('Error reseting password:', error);
+            res.status(500).send('Error reseting password.');
+        }
+
+    });
+
