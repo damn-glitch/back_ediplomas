@@ -90,14 +90,9 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS universities
             (
-                id
-                SERIAL
-                PRIMARY
-                KEY,
-                name
-                TEXT,
-                city
-                TEXT
+                id SERIAL PRIMARY KEY,
+                name TEXT,
+                city TEXT
             )
         `)
             .then(() => {
@@ -113,40 +108,22 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS graduates
             (
-                id
-                SERIAL
-                PRIMARY
-                KEY,
-                fullNameEng
-                TEXT,
-                fullNameKz
-                TEXT,
-                major
-                TEXT,
-                speciality
-                TEXT,
-                IIN
-                TEXT,
-                university_id
-                INT,
-                gpa
-                FLOAT,
-                year
-                INT,
-                region
-                TEXT,
-                constraint
-                fk_university_id
-                foreign
-                key
-            (
-                university_id
+                id SERIAL PRIMARY KEY,
+                fullNameEng TEXT,
+                fullNameKz TEXT,
+                major TEXT,
+                speciality TEXT,
+                IIN TEXT,
+                university_id INT,
+                gpa FLOAT,
+                year INT,
+                region TEXT,
+                mobile TEXT,
+                email TEXT,
+                constraint fk_university_id
+                foreign key (university_id)
+                references universities( id )
             )
-                references universities
-            (
-                id
-            )
-                )
         `)
             .then(() => {
                 console.log('Graduates table created or already exists');
@@ -158,18 +135,10 @@ db.connect()
         db.query(`
             CREATE TABLE IF NOT EXISTS otp_table
             (
-                id
-                SERIAL
-                PRIMARY
-                KEY,
-                email
-                TEXT,
-                otp
-                TEXT,
-                created_at
-                TIMESTAMPTZ
-                DEFAULT
-                CURRENT_TIMESTAMP
+                id SERIAL PRIMARY KEY,
+                email TEXT,
+                otp TEXT,
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
             )
         `)
             .then(() => {
@@ -346,7 +315,7 @@ app.post('/login', async (req, res) => {
 app.get('/dont-touch-this', async (req, res) => {
     // db.query(`drop table if exists temp_table`)
     const file = require('./data_back.json');
-    for (let i = 0; i < file.length; i++) {
+    for (let i = 540; i < file.length; i++) {
         let fullname_kz = (file[i]["Fullname_kz"]).trim();
         let Fullname_en = (file[i]["Fullname_eng"]).trim();
         let year = (file[i]["Year"].split(", ")[1]).trim();
@@ -366,11 +335,12 @@ app.get('/dont-touch-this', async (req, res) => {
 
         let iin = (file[i]["IIN"] ?? "").toString();
         let region = ((file[i]["Region"] && file[i]["Region"].length > 3) ? file[i]["Region"] && file[i]["Region"] : file[i]["Region2"]) ?? "";
-
+        let mobile = ((file[i]["mobile"] ? file[i]["mobile"] : "") ?? "");
+        let email = ((file[i]["email"] ? file[i]["email"]: "") ?? "");
         const query =
             `INSERT INTO graduates 
-            (fullNameEng, fullNameKz, major, speciality, IIN, university_id, gpa, year, region) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
+            (fullNameEng, fullNameKz, major, speciality, IIN, university_id, gpa, year, region, mobile, email) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`;
         const values = [
             Fullname_en,
             fullname_kz,
@@ -380,7 +350,9 @@ app.get('/dont-touch-this', async (req, res) => {
             1,
             gpa,
             year,
-            region
+            region,
+            mobile,
+            email,
         ];
         db.query(query, values, (err, result) => {
             if (err) {
@@ -393,6 +365,8 @@ app.get('/dont-touch-this', async (req, res) => {
                 console.log(gpa);
                 console.log(iin);
                 console.log(region);
+                console.log(mobile);
+                console.log(email);
                 console.log("--------------------------------")
                 console.error('Error inserting data:', err);
                 return;
@@ -411,7 +385,7 @@ app.get('/graduate-details', authenticate, async (req, res) => {
             res.status(400).send('Field "name" is reqiured.')
             return;
         }
-        const user = await db.query('SELECT iin, gpa, region FROM graduates WHERE fullNameEng = $1 ', [
+        const user = await db.query('SELECT * FROM graduates WHERE fullNameEng = $1 ', [
             name,
         ]);
 
@@ -425,6 +399,12 @@ app.get('/graduate-details', authenticate, async (req, res) => {
             }
             if (user.rows[0]['region'].length > 3) {
                 data.push({"value": user.rows[0]['region'], "label_en": "Region", "label_ru": "Регион"});
+            }
+            if (user.rows[0]['mobile'].length > 3) {
+                data.push({"value": "+" + user.rows[0]['mobile'], "label_en": "Mobile", "label_ru": "Мобильный"});
+            }
+            if (user.rows[0]['email'].length > 3) {
+                data.push({"value": user.rows[0]['email'], "label_en": "Email", "label_ru": "Почта"});
             }
             res.json(data);
         } else {
