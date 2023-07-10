@@ -236,15 +236,6 @@ app.post(
         body('password')
             .isLength({min: 6})
             .withMessage('Password must be at least 6 characters long.'),
-        body('repassword')
-            .notEmpty()
-            .withMessage('Passwords are not the same.')
-            .custom((value, {req}) => {
-                if (value !== req.body.password) {
-                    return false;
-                }
-                return true;
-            }),
         body('companyName').notEmpty().withMessage('Company name is required.'),
     ],
     async (req, res) => {
@@ -412,7 +403,7 @@ app.get('/dont-touch-this', async (req, res) => {
 });
 
 // Account route (authenticated)
-app.get('/graduate-details', authenticate, async (req, res) => {
+app.get('/graduate-details', authenticate, async (req,res) => {
     try {
         const name = req.query.name;
         if (!name) {
@@ -682,80 +673,3 @@ app.post('/verify-otp', async (req, res) => {
         res.status(500).json({error: 'Error verifying OTP:' + error});
     }
 });
-
-
-// Password Reset route
-app.post(
-    '/password-reset',
-    [
-        body('email')
-            .isEmail()
-            .withMessage('Please enter a valid email address.')
-            .custom((value) => {
-                if (isRestrictedDomain(value)) {
-                    throw new Error('Registration with this email domain is not allowed.');
-                }
-                return true;
-            }),
-        body('password')
-            .isLength({min: 6})
-            .withMessage('Password must be at least 6 characters long.'),
-        body('repassword')
-            .notEmpty()
-            .withMessage('Passwords are not the same.')
-            .custom((value, {req}) => {
-                if (value !== req.body.password) {
-                    return false;
-                }
-                return true;
-            }),
-        body('code')
-            .notEmpty()
-            .withMessage('Verification code must not be empty.')
-    ],
-    async (req, res) => {
-
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json(errors);
-        }
-
-        const {email, password, code} = req.body;
-
-        try {
-            //validating otp code
-            const otpResult = await db.query(
-                'SELECT otp FROM otp_table WHERE email = $1 ORDER BY created_at DESC LIMIT 1',
-                [email]
-            );
-
-            if (otpResult.rows.length === 0) {
-                return res.status(400).json({error: 'OTP not found'});
-            }
-
-            const lastOTP = otpResult.rows[0].otp;
-
-            if (code !== lastOTP) {
-                return res.status(400).json({error: "Invalid verification code"})
-            }
-
-            // Check if the user exists
-            const existingUser = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-
-            if (existingUser.rows.length == 0) {
-                return res.status(404).send('Email not found.');
-            }
-
-            // Hash the password
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
-
-            //setting new password
-            db.query('UPDATE users WHERE id = $1 SET password = $2', [existingUser.rows['id'], hashedPassword]);
-
-        } catch (error) {
-            console.error('Error reseting password:', error);
-            res.status(500).send('Error reseting password.');
-        }
-
-    });
