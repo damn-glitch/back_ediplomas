@@ -494,6 +494,7 @@ app.get('/search', async (req, res) => {
     const gpaR = req.query.gpaR;
     const speciality = req.query.specialities;
     const region = req.query.region;
+    const degree = req.query.degree;
     const year = req.query.year;
 
     const query_dict = {
@@ -501,7 +502,8 @@ app.get('/search', async (req, res) => {
         gpa: gpaL && gpaR ? [parseFloat(gpaL), parseFloat(gpaR)] : null,
         speciality: speciality ? speciality.split(',') : "",
         region: region ? region.split(',') : "",
-        year: year ? year.split(',') : ""
+        degree: degree ? degree.toLowerCase().split(',') : "",
+        year: year ? year.split(',') : "",
     };
 
     try {
@@ -544,6 +546,15 @@ app.get('/search', async (req, res) => {
                 case "region":
                     if (Array.isArray(value)) {
                         db_query += `(${value.map((_, i) => `${key} LIKE $${parameterIndex++}`).join(" OR ")}) AND `;
+                        queryValues.push(...value.map(v => `%${v}%`));
+                    } else {
+                        db_query += `${key} LIKE $${parameterIndex++} AND `;
+                        queryValues.push(`%${value}%`);
+                    }
+                    break;
+                case "degree":
+                    if (Array.isArray(value)) {
+                        db_query += `(${value.map((_, i) => `major LIKE $${parameterIndex++}`).join(" OR ")}) AND `;
                         queryValues.push(...value.map(v => `%${v}%`));
                     } else {
                         db_query += `${key} LIKE $${parameterIndex++} AND `;
