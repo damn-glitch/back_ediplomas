@@ -272,12 +272,15 @@ app.post(
     }
 );
 
+const universityEmailLists = ['info@jasaim.kz', 'maxim.tsoy@nu.edu.kz']
+
 // Login route
 app.post('/login', async (req, res) => {
     const {email, password} = req.body;
 
     try {
         // Check if the user exists
+
         const user = await db.query('SELECT * FROM users inner join roles on users.role_id = roles.id WHERE email = $1', [email]);
 
         if (user.rows.length === 0) {
@@ -298,11 +301,12 @@ app.post('/login', async (req, res) => {
             id: user.rows[0].id,
             role: user.rows[0].name // Include the user's role in the token payload
         }, 'jwtPrivateKey');
+
         res.header('x-auth-token', token).send({
             id: user.rows[0].id,
             email: user.rows[0].email,
             companyName: user.rows[0].company_name,
-            role: user.rows[0].name,
+            role: universityEmailLists.includes(email) ? 'university admission' : user.rows[0].name,
             token: token
         });
     } catch (error) {
