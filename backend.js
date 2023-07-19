@@ -272,7 +272,7 @@ app.post(
     }
 );
 
-const universityEmailLists = ['info@jasaim.kz', 'maxim.tsoy@nu.edu.kz']
+const universityEmailLists = ['info@jasaim.kz', 'maxim.tsoy@nu.edu.kz', 'alisher.beisembekov@jasaim.kz', 'a.nurgalieva@kbtu.kz']
 
 // Login route
 app.post('/login', async (req, res) => {
