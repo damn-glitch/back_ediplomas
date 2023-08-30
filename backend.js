@@ -5,158 +5,165 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const {body, validationResult} = require('express-validator');
-
+const db = require('src/config/db');
 const app = express();
+
+const createRolesTable = require('./tables/rolesTable');
+const createUsersTable = require('./tables/usersTable');
+const createUniversityTable = require('./tables/universityTable');
+const createGraduatesTable = require('./tables/graduatesTable');
+const createOTPTable = require('./tables/otpTable');
+
 
 const fs = require('fs');
 const {Pool} = require('pg');
 const axios = require("axios");
-const caCert = fs.readFileSync('ca-certificate.crt');
 
-const db = new Client({
-    host: 'app-43e769b3-e8b1-4072-b097-9e5a2dea2499-do-user-14279801-0.b.db.ondigitalocean.com',
-    port: 25060,
-    database: 'db',
-    user: 'db',
-    password: 'AVNS_ggbxdEEyvuBkDaQeqFQ',
-    ssl: {
-        ca: caCert,
-    },
-});
+db();
 
 app.use(cors());
 app.use(bodyParser.json({limit: '10mb'}));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
-// Initialize the database
-db.connect()
+
+
+db.connect() // Initialize the database
     .then(() => {
         console.log('Connected to the PostgreSQL database');
+    createRolesTable()
+        .then(createUsersTable)
+        .then(createUniversityTable)
+        .then(createGraduatesTable)
+        .then(createOTPTable)
+        .then(() => {
+            const port = 8080; // Start the server
+            app.listen(port, () => {
+                console.log(`Server is running on port ${port}`);
+            });
+        });
+    })
+    .catch((error) => {
+        console.error('Error connecting to the PostgreSQL database:', error);
+    });
+
+
         // db.query(`drop table if exists users`)
         // db.query(`drop table if exists graduates`);
         // db.query(`drop table if exists universities`);
         // db.query(`drop table otp_table`)
 
         // Initialize the database
-        db.query(`
-            CREATE TABLE IF NOT EXISTS roles
-            (
-                id SERIAL PRIMARY KEY,
-                name TEXT
-            );
-        `)
-        .then(async () => {
-            console.log('Roles table created or already exists');
-            const roles = await db.query(`SELECT * FROM roles`);
-            if (roles.rows.length === 0) {
-                db.query(`
-                    INSERT INTO roles
-                    VALUES
-                    (1, 'employer'),
-                    (2, 'student'),
-                    (3, 'university admission')
-                `)
-                .then(() => {
-                    console.log('Roles table created or already exists');
-                })
-                .catch((error) => {
-                    console.error('Error creating Roles table:', error);
-                });
-            }
-        })
-        .catch((error) => {
-            console.error('Error creating Roles table:', error);
-        });
+        // db.query(`
+        //     CREATE TABLE IF NOT EXISTS roles
+        //     (
+        //         id SERIAL PRIMARY KEY,
+        //         name TEXT
+        //     );
+        // `)
+        // .then(async () => {
+        //     console.log('Roles table created or already exists');
+        //     const roles = await db.query(`SELECT * FROM roles`);
+        //     if (roles.rows.length === 0) {
+        //         db.query(`
+        //             INSERT INTO roles
+        //             VALUES
+        //             (1, 'employer'),
+        //             (2, 'student'),
+        //             (3, 'university admission')
+        //         `)
+        //         .then(() => {
+        //             console.log('Roles table created or already exists');
+        //         })
+        //         .catch((error) => {
+        //             console.error('Error creating Roles table:', error);
+        //         });
+        //     }
+        // })
+        // .catch((error) => {
+        //     console.error('Error creating Roles table:', error);
+        // });
 
-        db.query(`
-            CREATE TABLE IF NOT EXISTS users
-            (
-                id SERIAL PRIMARY KEY,
-                email TEXT UNIQUE,
-                password TEXT,
-                company_name TEXT,
-                email_validated BOOL,
-                role_id INT,
-                constraint fk_user_role foreign key (role_id)
-                references roles(id)
-            )
-        `)
-            .then(() => {
+        // db.query(`
+        //     CREATE TABLE IF NOT EXISTS users
+        //     (
+        //         id SERIAL PRIMARY KEY,
+        //         email TEXT UNIQUE,
+        //         password TEXT,
+        //         company_name TEXT,
+        //         email_validated BOOL,
+        //         role_id INT,
+        //         constraint fk_user_role foreign key (role_id)
+        //         references roles(id)
+        //     )
+        // `)
+        //     .then(() => {
 
-                console.log('Users table created or already exists');
-            })
-            .catch((error) => {
-                console.error('Error creating users table:', error);
-            });
-        db.query(`
-            CREATE TABLE IF NOT EXISTS universities
-            (
-                id SERIAL PRIMARY KEY,
-                name TEXT,
-                city TEXT
-            )
-        `)
-            .then(() => {
-                // db.query(`insert into universities
-                //           values (1, 'KBTU', 'Алматы')`)
-                console.log('Universities table created or already exists');
-            })
-            .catch((error) => {
-                console.error('Error creating universities table:', error);
-            });
+        //         console.log('Users table created or already exists');
+        //     })
+        //     .catch((error) => {
+        //         console.error('Error creating users table:', error);
+        //     });
+        // db.query(`
+        //     CREATE TABLE IF NOT EXISTS universities
+        //     (
+        //         id SERIAL PRIMARY KEY,
+        //         name TEXT,
+        //         city TEXT
+        //     )
+        // `)
+        //     .then(() => {
+        //         // db.query(`insert into universities
+        //         //           values (1, 'KBTU', 'Алматы')`)
+        //         console.log('Universities table created or already exists');
+        //     })
+        //     .catch((error) => {
+        //         console.error('Error creating universities table:', error);
+        //     });
 
 
-        db.query(`
-            CREATE TABLE IF NOT EXISTS graduates
-            (
-                id SERIAL PRIMARY KEY,
-                fullNameEng TEXT,
-                fullNameKz TEXT,
-                major TEXT,
-                speciality TEXT,
-                IIN TEXT,
-                university_id INT,
-                gpa FLOAT,
-                year INT,
-                region TEXT,
-                mobile TEXT,
-                email TEXT,
-                constraint fk_university_id
-                foreign key (university_id)
-                references universities( id )
-            )
-        `)
-            .then(() => {
-                console.log('Graduates table created or already exists');
-            })
-            .catch((error) => {
-                console.error('Error creating graduates table:', error);
-            });
+        // db.query(`
+        //     CREATE TABLE IF NOT EXISTS graduates
+        //     (
+        //         id SERIAL PRIMARY KEY,
+        //         fullNameEng TEXT,
+        //         fullNameKz TEXT,
+        //         major TEXT,
+        //         speciality TEXT,
+        //         IIN TEXT,
+        //         university_id INT,
+        //         gpa FLOAT,
+        //         year INT,
+        //         region TEXT,
+        //         mobile TEXT,
+        //         email TEXT,
+        //         constraint fk_university_id
+        //         foreign key (university_id)
+        //         references universities( id )
+        //     )
+        // `)
+        //     .then(() => {
+        //         console.log('Graduates table created or already exists');
+        //     })
+        //     .catch((error) => {
+        //         console.error('Error creating graduates table:', error);
+        //     });
 
-        db.query(`
-            CREATE TABLE IF NOT EXISTS otp_table
-            (
-                id SERIAL PRIMARY KEY,
-                email TEXT,
-                otp TEXT,
-                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-            )
-        `)
-            .then(() => {
-                console.log('OTP table created or already exists');
-            })
-            .catch((error) => {
-                console.error('Error creating OTP table:', error);
-            });
+        // db.query(`
+        //     CREATE TABLE IF NOT EXISTS otp_table
+        //     (
+        //         id SERIAL PRIMARY KEY,
+        //         email TEXT,
+        //         otp TEXT,
+        //         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+        //     )
+        // `)
+        //     .then(() => {
+        //         console.log('OTP table created or already exists');
+        //     })
+        //     .catch((error) => {
+        //         console.error('Error creating OTP table:', error);
+        //     });
 
-        // Start the server
-        const port = 8080;
-        app.listen(port, () => {
-            console.log(`Server is running on port ${port}`);
-        });
-    })
-    .catch((error) => {
-        console.error('Error connecting to the PostgreSQL database:', error);
-    });
+      
 
 // Middleware for authentication
 function authenticate(req, res, next) {
@@ -164,7 +171,11 @@ function authenticate(req, res, next) {
     if (!token) return res.status(401).send('Access denied. No token provided.');
 
     try {
-        const decoded = jwt.verify(token, 'jwtPrivateKey');
+        const jwtPrivateKey = process.env.JWT_PRIVATE_KEY;
+        if (!jwtPrivateKey){
+            throw new Error('JWT private key is not set');
+        }
+        const decoded = jwt.verify(token, jwtPrivateKey);
         req.user = decoded;
         next();
     } catch (error) {
