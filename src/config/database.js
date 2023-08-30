@@ -1,3 +1,6 @@
+const fs = require('fs');
+const {Client} = require('pg');
+
 const caCert = fs.readFileSync('ca-certificate.crt');
 const db = new Client({
     host: process.env.DB_HOST,
@@ -10,4 +13,4 @@ const db = new Client({
     },
 });
 
-export default db;
+module.exports = db;

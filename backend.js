@@ -1,25 +1,23 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const {Client} = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const {body, validationResult} = require('express-validator');
-const db = require('src/config/db');
+const db = require('./src/config/database');
 const app = express();
 
-const createRolesTable = require('./tables/rolesTable');
-const createUsersTable = require('./tables/usersTable');
-const createUniversityTable = require('./tables/universityTable');
-const createGraduatesTable = require('./tables/graduatesTable');
-const createOTPTable = require('./tables/otpTable');
+const createRolesTable = require('./src/tables/rolesTable');
+const createUsersTable = require('./src/tables/usersTable');
+const createUniversityTable = require('./src/tables/universityTable');
+const createGraduatesTable = require('./src/tables/graduatesTable');
+const createOTPTable = require('./src/tables/otpTable');
 
 
-const fs = require('fs');
 const {Pool} = require('pg');
 const axios = require("axios");
 
-db();
+
 
 app.use(cors());
 app.use(bodyParser.json({limit: '10mb'}));
