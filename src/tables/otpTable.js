@@ -17,6 +17,6 @@ async function createOTPTable() {
     catch (error) {
         console.error('Error creating OTP table:', error);
     }
-    };
+}
 
 module.exports = createOTPTable;

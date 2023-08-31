@@ -42,7 +42,7 @@ router.get('/graduate-details', authenticate, async (req, res) => {
 });
 
 // Graduates route (authenticated)
-app.get('/graduates', authenticate, async (req, res) => {
+router.get('/graduates', authenticate, async (req, res) => {
     try {
         const graduates = await db.query('SELECT * FROM graduates');
 

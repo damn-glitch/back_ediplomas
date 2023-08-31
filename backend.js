@@ -62,7 +62,6 @@ const startServer = async () => {
 
 startServer();
 
-const universityEmailLists = ['info@jasaim.kz', 'maxim.tsoy@nu.edu.kz', 'alisher.beisembekov@jasaim.kz', 'a.nurgalieva@kbtu.kz']
 
 // Search graduates by metadata (authenticated)
 app.get('/search', async (req, res) => {
