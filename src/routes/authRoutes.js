@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 
 const router = express.Router();
+const universityEmailLists = ['info@jasaim.kz', 'maxim.tsoy@nu.edu.kz', 'alisher.beisembekov@jasaim.kz', 'a.nurgalieva@kbtu.kz']
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
