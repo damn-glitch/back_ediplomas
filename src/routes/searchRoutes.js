@@ -1,8 +1,8 @@
 const express = require('express');
-const db = require('../config/database'); // Adjust the path as needed
+const db = require('../config/database'); 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+router.get('/search', async (req, res) => {
     const name = req.query.name;
     const gpaL = req.query.gpaL;
     const gpaR = req.query.gpaR;

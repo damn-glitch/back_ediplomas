@@ -2,7 +2,7 @@ const express = require('express');
 const db = require('../config/database'); 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+router.get('/validate-iin', async (req, res) => {
     let name = req.query.name;
     let iin = req.query.iin;
 

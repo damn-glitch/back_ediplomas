@@ -3,8 +3,8 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
-const db = require('../config/database'); // Import your database connection module
-const { isRestrictedDomain } = require('../middleware/authenticate'); // Import the restricted domain check function
+const db = require('../config/database'); 
+const { isRestrictedDomain } = require('../middleware/authenticate'); 
 
 const router = express.Router();
 
@@ -43,18 +43,15 @@ router.post(
         const {email, password, companyName} = req.body;
 
         try {
-            // Check if the user already exists
             const existingUser = await db.query('SELECT * FROM users WHERE email = $1', [email]);
 
             if (existingUser.rows.length > 0) {
                 return res.status(400).send('User already registered.');
             }
 
-            // Hash the password
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            // Save the new user
             const newUser = await db.query(
                 'INSERT INTO users (email, password, company_name, role_id, email_validated) VALUES ($1, $2, $3, 1, false) RETURNING *',
                 [email, hashedPassword, companyName]
@@ -83,7 +80,6 @@ router.post(
             }
             console.log(response.data);
 
-            // Store the OTP in the database (you can modify this code according to your database structure)
             await db.query('INSERT INTO otp_table (email, otp) VALUES ($1, $2)', [email, otp]);
 
             return res.json({message: 'OTP sent successfully ' + response.data});
