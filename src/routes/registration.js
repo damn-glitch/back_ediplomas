@@ -4,7 +4,7 @@ const { body, validationResult } = require('express-validator');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const db = require('../config/database'); // Import your database connection module
-const { isRestrictedDomain } = require('../middleware/auth'); // Import the restricted domain check function
+const { isRestrictedDomain } = require('../middleware/authenticate'); // Import the restricted domain check function
 
 const router = express.Router();
 

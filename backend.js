@@ -1,11 +1,11 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const { isRestrictedDomain, authenticate } = require('./src/middleware/auth');
-const {body, validationResult} = require('express-validator');
+const { authenticate, isRestrictedDomain } = require('./src/middleware/authenticate');
+const { body, validationResult } = require('express-validator');
 const db = require('./src/config/database');
+
 const app = express();
 
 const createRolesTable = require('./src/tables/rolesTable');
@@ -19,6 +19,12 @@ const {Pool} = require('pg');
 const axios = require("axios");
 const router = require('./src/routes/registration');
 
+const authRoutes = require('./src/routes/authRoutes');
+const dataRoutes = require('./src/routes/dataRoutes');
+const graduateRoutes = require('./src/routes/graduateRoutes'); 
+const accountRoutes = require('./src/routes/accountRoutes'); 
+const searchRoutes = require('./src/routes/searchRoutes'); 
+const validationRoutes = require('./src/routes/validationRoutes'); 
 
 
 app.use(cors());
@@ -26,7 +32,12 @@ app.use(bodyParser.json({limit: '10mb'}));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
 app.use(authenticate);
 app.use('/', router);
-
+app.use('/authRoutes', authRoutes);
+app.use('/dataRoutes', dataRoutes);
+app.use('/graduates', graduateRoutes); 
+app.use('/account', accountRoutes); 
+app.use('/search', searchRoutes);
+app.use('/validate-iin', validationRoutes);
 
 // Registration route
 const startServer = async () => {
@@ -34,7 +45,6 @@ const startServer = async () => {
         await db.connect(); // Initialize the database connection
         console.log('Connected to the PostgreSQL database');
 
-        // Create tables
         await createRolesTable();
         await createUsersTable();
         await createUniversityTable();
@@ -52,225 +62,7 @@ const startServer = async () => {
 
 startServer();
 
-
 const universityEmailLists = ['info@jasaim.kz', 'maxim.tsoy@nu.edu.kz', 'alisher.beisembekov@jasaim.kz', 'a.nurgalieva@kbtu.kz']
-
-// Login route
-app.post('/login', async (req, res) => {
-    const {email, password} = req.body;
-
-    try {
-        // Check if the user exists
-
-        const user = await db.query('SELECT * FROM users inner join roles on users.role_id = roles.id WHERE email = $1', [email]);
-
-        if (user.rows.length === 0) {
-            return res.status(400).send('Invalid email or password.');
-        }
-        // Verify the password
-        const emailValidated = user.rows[0].email_validated
-        const validPassword = await bcrypt.compare(password, user.rows[0].password);
-        if (!validPassword) {
-            return res.status(400).send('Invalid email or password.');
-        }
-        if (!user.rows[0].email_validated) {
-            return res.status(400).send('Email has not been verified');
-        }
-
-        // Create a new JWT token
-        const token = jwt.sign({
-            id: user.rows[0].id,
-            role: user.rows[0].name // Include the user's role in the token payload
-        }, 'jwtPrivateKey');
-
-        res.header('x-auth-token', token).send({
-            id: user.rows[0].id,
-            email: user.rows[0].email,
-            companyName: user.rows[0].company_name,
-            role: universityEmailLists.includes(email) ? 'university admission' : user.rows[0].name,
-            token: token
-        });
-    } catch (error) {
-        console.error('Error logging in:', error);
-        res.status(500).send('Error logging in.');
-    }
-});
-
-// parse and insert to db route
-app.get('/dont-touch-this', async (req, res) => {
-    // db.query(`drop table if exists temp_table`)
-    const file = require('./data_back.json');
-    for (let i = 540; i < file.length; i++) {
-        let fullname_kz = (file[i]["Fullname_kz"]).trim();
-        let Fullname_en = (file[i]["Fullname_eng"]).trim();
-        let year = (file[i]["Year"].split(", ")[1]).trim();
-        if (!year || year == "" || year == "-") {
-            year = 0;
-        } else {
-            year = parseInt(year);
-        }
-        let degree = (file[i]["Degree"].split(" степень ")[1]).trim();
-        let speciality = (file[i]["speciality"].split("«")[1].split("»")[0]).trim();
-        let gpa = (file[i]["GPA"] ?? "");
-        if (!gpa || gpa == "" || gpa == "-") {
-            gpa = 0;
-        } else {
-            gpa = parseFloat(gpa);
-        }
-
-        let iin = (file[i]["IIN"] ?? "").toString();
-        let region = ((file[i]["Region"] && file[i]["Region"].length > 3) ? file[i]["Region"] && file[i]["Region"] : file[i]["Region2"]) ?? "";
-        let mobile = ((file[i]["mobile"] ? file[i]["mobile"] : "") ?? "");
-        let email = ((file[i]["email"] ? file[i]["email"]: "") ?? "");
-        const query =
-            `INSERT INTO graduates 
-            (fullNameEng, fullNameKz, major, speciality, IIN, university_id, gpa, year, region, mobile, email) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`;
-        const values = [
-            Fullname_en,
-            fullname_kz,
-            degree,
-            speciality,
-            iin,
-            1,
-            gpa,
-            year,
-            region,
-            mobile,
-            email,
-        ];
-        db.query(query, values, (err, result) => {
-            if (err) {
-
-                console.log(fullname_kz);
-                console.log(Fullname_en);
-                console.log(year);
-                console.log(degree);
-                console.log(speciality);
-                console.log(gpa);
-                console.log(iin);
-                console.log(region);
-                console.log(mobile);
-                console.log(email);
-                console.log("--------------------------------")
-                console.error('Error inserting data:', err);
-                return;
-            }
-            console.log(i + ': Data inserted successfully!');
-        });
-
-    }
-});
-
-// Account route (authenticated)
-app.get('/graduate-details', authenticate, async (req, res) => {
-    try {
-        const name = req.query.name;
-        if (!name) {
-            res.status(400).send('Field "name" is reqiured.')
-            return;
-        }
-        const user = await db.query('SELECT * FROM graduates WHERE fullNameEng = $1 ', [
-            name,
-        ]);
-
-        if (user.rows.length > 0) {
-            let data = [];
-            if (user.rows[0]['gpa'] != 0) {
-                data.push({"value": user.rows[0]['gpa'], "label_en": "GPA", "label_ru": "GPA"});
-            }
-            if (user.rows[0]['iin'].length > 10) {
-                data.push({"value": user.rows[0]['iin'], "label_en": "IIN", "label_ru": "ИИН"});
-            }
-            if (user.rows[0]['region'].length > 3) {
-                data.push({"value": user.rows[0]['region'], "label_en": "Region", "label_ru": "Регион"});
-            }
-            if (user.rows[0]['mobile'].length > 3) {
-                data.push({"value": "+" + user.rows[0]['mobile'], "label_en": "Mobile", "label_ru": "Мобильный"});
-            }
-            if (user.rows[0]['email'].length > 3) {
-                data.push({"value": user.rows[0]['email'], "label_en": "Email", "label_ru": "Почта"});
-            }
-            res.json(data);
-        } else {
-            res.status(404).send('Graduate not found.');
-        }
-    } catch (error) {
-        console.error('Error fetching graduates details:', error);
-        res.status(500).send('Error fetching graduates details.');
-    }
-})
-app.get('/account', authenticate, async (req, res) => {
-    try {
-        const user = await db.query(`
-            SELECT id, email, company_name, role_id
-            FROM users
-            INNER JOIN roles ON users.role_id = roles.id
-            WHERE id = $1
-        `, [req.user.id]);
-
-        if (user.rows.length > 0) {
-            const userData = {
-                id: user.rows[0].id,
-                email: user.rows[0].email,
-                companyName: user.rows[0].company_name
-            };
-
-            // Check the user's role
-            if (user.rows[0].role_id === 3) {
-                // User has the "university admission" role
-                userData.analyticsButton = true;
-            } else {
-                userData.analyticsButton = false;
-            }
-
-            res.send(userData);
-        } else {
-            res.status(404).send('User not found.');
-        }
-    } catch (error) {
-        console.error('Error fetching user account:', error);
-        res.status(500).send('Error fetching user account.');
-    }
-});
-
-
-// Update account route (authenticated)
-app.put('/account', authenticate, async (req, res) => {
-    const {companyName} = req.body;
-
-    if (!companyName) {
-        return res.status(400).send('Company name is required.');
-    }
-
-    try {
-        const result = await db.query(
-            'UPDATE users SET company_name = $1 WHERE id = $2 RETURNING *',
-            [companyName, req.user.id]
-        );
-
-        if (result.rows.length > 0) {
-            res.send({message: 'User updated successfully.'});
-        } else {
-            res.status(404).send('User not found.');
-        }
-    } catch (error) {
-        console.error('Error updating user account:', error);
-        res.status(500).send('Error updating user account.');
-    }
-});
-
-// Graduates route (authenticated)
-app.get('/graduates', authenticate, async (req, res) => {
-    try {
-        const graduates = await db.query('SELECT * FROM graduates');
-
-        res.send(graduates.rows);
-    } catch (error) {
-        console.error('Error fetching graduates:', error);
-        res.status(500).send('Error fetching graduates.');
-    }
-});
 
 // Search graduates by metadata (authenticated)
 app.get('/search', async (req, res) => {
