@@ -16,5 +16,8 @@
     "start": "node backend.js",
     "build:digitalocean": "npm install --production=false && npm run build && npm ci",
     "start:digitalocean": "npm run start"
+  },
+  "devDependencies": {
+    "eslint": "^8.48.0"
   }
 }
