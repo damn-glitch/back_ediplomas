@@ -2,8 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const db = require('../config/database'); 
-const { isRestrictedDomain } = require('./middleware/authenticate');
-const { body, validationResult } = require('express-validator');
+const { isRestrictedDomain } = require('../middleware/authenticate');
 
 
 const router = express.Router();

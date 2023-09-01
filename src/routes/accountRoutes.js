@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticate } = require('../middleware/auth'); 
+const { authenticate } = require('../middleware/authenticate'); 
 const db = require('../config/database'); 
 
 const router = express.Router();
@@ -31,7 +31,7 @@ router.get('/account', authenticate, async (req, res) => {
 });
 
 // Update account route (authenticated)
-app.put('/account', authenticate, async (req, res) => {
+router.put('/account', authenticate, async (req, res) => {
     const {companyName} = req.body;
 
     if (!companyName) {

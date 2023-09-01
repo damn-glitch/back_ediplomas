@@ -1,6 +1,7 @@
 const express = require('express');
+// const bcrypt = require('bcryptjs');
+
 const bodyParser = require('body-parser');
-const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const { authenticate } = require('./src/middleware/authenticate');
 const db = require('./src/config/database');
@@ -14,8 +15,8 @@ const createGraduatesTable = require('./src/tables/graduatesTable');
 const createOTPTable = require('./src/tables/otpTable');
 
 
-const {Pool} = require('pg');
-const axios = require("axios");
+//const {Pool} = require('pg');
+//const axios = require("axios");
 const router = require('./src/routes/registrationRoutes');
 
 const authRoutes = require('./src/routes/authRoutes');
