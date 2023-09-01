@@ -26,6 +26,7 @@ app.get('/validate-otp', (req, res) => {
           data = response.json;
         })
         .catch(error => {
+          console.log(error);
         });
     } catch (error) {
       return res.json(error.message);

@@ -49,7 +49,7 @@ router.get('/search', async (req, res) => {
                     break;
                 case "speciality":
                     if (Array.isArray(value)) {
-                        db_query += `(${value.map((_, i) => `${key} LIKE $${parameterIndex++}`).join(" OR ")}) AND `;
+                        db_query += `(${value.map(() => `${key} LIKE $${parameterIndex++}`).join(" OR ")}) AND `;
                         queryValues.push(...value.map(v => `%${v}%`));
                     } else {
                         db_query += `${key} LIKE $${parameterIndex++} AND `;
@@ -59,7 +59,7 @@ router.get('/search', async (req, res) => {
                     break;
                 case "region":
                     if (Array.isArray(value)) {
-                        db_query += `(${value.map((_, i) => `${key} LIKE $${parameterIndex++}`).join(" OR ")}) AND `;
+                        db_query += `(${value.map(() => `${key} LIKE $${parameterIndex++}`).join(" OR ")}) AND `;
                         queryValues.push(...value.map(v => `%${v}%`));
                     } else {
                         db_query += `${key} LIKE $${parameterIndex++} AND `;
@@ -68,7 +68,7 @@ router.get('/search', async (req, res) => {
                     break;
                 case "degree":
                     if (Array.isArray(value)) {
-                        db_query += `(${value.map((_, i) => `major LIKE $${parameterIndex++}`).join(" OR ")}) AND `;
+                        db_query += `(${value.map(() => `major LIKE $${parameterIndex++}`).join(" OR ")}) AND `;
                         queryValues.push(...value.map(v => `%${v}%`));
                     } else {
                         db_query += `${key} LIKE $${parameterIndex++} AND `;
@@ -77,7 +77,7 @@ router.get('/search', async (req, res) => {
                     break;
                 case "year":
                     if (Array.isArray(value)) {
-                        db_query += `(${value.map((_, i) => `${key} = $${parameterIndex++}`).join(" OR ")}) AND `;
+                        db_query += `(${value.map(() => `${key} = $${parameterIndex++}`).join(" OR ")}) AND `;
                         queryValues.push(...value);
                     } else {
                         db_query += `${key} = $${parameterIndex++} AND `;

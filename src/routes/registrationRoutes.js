@@ -52,7 +52,7 @@ router.post(
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            const newUser = await db.query(
+            await db.query(
                 'INSERT INTO users (email, password, company_name, role_id, email_validated) VALUES ($1, $2, $3, 1, false) RETURNING *',
                 [email, hashedPassword, companyName]
             );

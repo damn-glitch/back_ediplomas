@@ -5,6 +5,7 @@
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.0",
@@ -20,6 +21,7 @@
     "lint": "eslint '**/*.js'"
   },
   "devDependencies": {
+    "@types/node": "^20.5.7",
     "eslint": "^8.48.0"
   }
 }

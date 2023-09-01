@@ -1,5 +1,6 @@
 // Middleware for authentication
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 const restrictedDomains = [
     'gmail.com',
