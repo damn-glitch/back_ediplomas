@@ -1,5 +1,5 @@
-const db = require('../config/database');
-async function createUsersTable() {
+// const db = require('../config/database');
+async function createUsersTable(db) {
     try {
         await db.query(`
             CREATE TABLE IF NOT EXISTS users

@@ -1,6 +1,6 @@
-const db = require('../config/database');
+// const db = require('../config/database');
 
-async function createUniversityTable() {
+async function createUniversityTable(db) {
     try {
         await db.query(`
             CREATE TABLE IF NOT EXISTS universities

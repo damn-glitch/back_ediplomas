@@ -1,6 +1,6 @@
-const db = require('../config/database');
+// const db = require('../config/database');
 
-async function createOTPTable() {
+async function createOTPTable(db) {
     try {
         await db.query(`
         CREATE TABLE IF NOT EXISTS otp_table

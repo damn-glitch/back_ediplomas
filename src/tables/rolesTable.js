@@ -1,7 +1,8 @@
-const db = require('../config/database');
+// const db = require('../config/database');
 
-async function createRolesTable() {
+async function createRolesTable(db) {
     try {
+        console.log("createRolesTable");
         await db.query(`
             CREATE TABLE IF NOT EXISTS roles
             (
