@@ -17,6 +17,9 @@ async function createGraduatesTable(db) {
             region TEXT,
             mobile TEXT,
             email TEXT,
+            status TEXT,
+            address TEXT,
+            description TEXT
             constraint fk_university_id
             foreign key (university_id)
             references universities( id )
