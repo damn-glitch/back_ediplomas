@@ -10,6 +10,10 @@ async function createUsersTable(db) {
                 company_name TEXT,
                 email_validated BOOL,
                 role_id INT,
+                description TEXT,
+                filials INT,
+                vacancies INT,
+                employers INT,
                 constraint fk_user_role foreign key (role_id)
                 references roles(id)
             );
