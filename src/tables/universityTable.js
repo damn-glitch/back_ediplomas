@@ -15,6 +15,7 @@ async function createUniversityTable(db) {
                 phone TEXT,
                 rating TEXT,
                 gpa FLOAT,
+                main_photo TEXT,
                 number_of_graduates INT,
                 number_of_best_students INT,
             )

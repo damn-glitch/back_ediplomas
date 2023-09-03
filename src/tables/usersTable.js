@@ -14,6 +14,7 @@ async function createUsersTable(db) {
                 filials INT,
                 vacancies INT,
                 employers INT,
+                main_photo TEXT,
                 constraint fk_user_role foreign key (role_id)
                 references roles(id)
             );
