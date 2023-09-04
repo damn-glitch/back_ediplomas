@@ -24,9 +24,7 @@ router.post('/verify-otp', async (req, res) => {
                            SET email_validated = true
                            WHERE email = $1`, [email]);
             return res.json(true);
-        } else {
-            return res.json(false);
-        }
+        } 
     } catch (error) {
         console.error('Error verifying OTP:', error);
         res.status(500).json({ error: 'Error verifying OTP:' + error });

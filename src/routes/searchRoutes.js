@@ -88,7 +88,7 @@ router.get('/search', async (req, res) => {
         }
 
         if (!has_filters) {
-            res.status(403).send('Bad Request');
+            res.status(400).send('Bad Request');
             return;
         }
 

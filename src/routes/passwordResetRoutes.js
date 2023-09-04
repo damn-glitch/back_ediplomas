@@ -58,7 +58,7 @@ router.post
             const lastOTP = otpResult.rows[0].otp;
 
             if (code !== lastOTP) {
-                return res.status(400).json({error: "Invalid verification code"})
+                return res.status(401).json({error: "Invalid verification code"})
             }
 
             // Check if the user exists

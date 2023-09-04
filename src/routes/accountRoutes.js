@@ -1,7 +1,7 @@
 const express = require('express');
 const { authenticate } = require('../middleware/authenticate'); 
 const db = require('../config/database'); 
-
+const analytics_Button = 3;
 const router = express.Router();
 
 router.get('/account', authenticate, async (req, res) => {
@@ -18,7 +18,7 @@ router.get('/account', authenticate, async (req, res) => {
                 id: user.rows[0].id,
                 email: user.rows[0].email,
                 companyName: user.rows[0].company_name,
-                analyticsButton: user.rows[0].role_id === 3
+                analyticsButton: user.rows[0].role_id === analytics_Button
             };
             res.send(userData);
         } else {

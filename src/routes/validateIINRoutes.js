@@ -24,7 +24,7 @@ router.get('/validate-iin', async (req, res) => {
         queryValues.push(iin);
 
         if (!has_filters) {
-            return res.status(403).send('Bad Request');
+            return res.status(400).send('Bad Request');
         }
         searchResult = await db.query(db_query, queryValues);
         if (searchResult.rows.length == 0) {
