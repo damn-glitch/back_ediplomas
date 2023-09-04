@@ -5,7 +5,7 @@ const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const db = require('../config/database'); 
 const { isRestrictedDomain } = require('../middleware/authenticate'); 
-const otp = require('../const/constants')
+const { otp, url, apiKey } = require('../const/constants');
 const router = express.Router();
 
 router.post(
@@ -63,9 +63,6 @@ router.post(
         }
 
         try {
-            const url = 'https://api.elasticemail.com/v2/email/send';
-            const apiKey = '269E440A75CE8313CAC9E266D2CA62DFE024880F89428750C42FA3D1062DD89CE2D7DD1648897EC9E41DFE9AB3F8D0F0';
-
             var formData = new URLSearchParams();
             formData.append("apikey", apiKey);
             formData.append("subject", 'Validation pin code: ' + otp);

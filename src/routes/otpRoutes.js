@@ -2,7 +2,8 @@
 
 const express = require('express');
 const axios = require('axios');
-const db = require('../config/database'); // Adjust the path as needed
+const db = require('../config/database'); 
+const { otp, url, apiKey } = require('../const/constants');
 
 const router = express.Router();
 
@@ -10,10 +11,6 @@ router.post('/get-otp', async (req, res) => {
     const { email } = req.body;
 
     try {
-        const otp = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-        const url = 'https://api.elasticemail.com/v2/email/send';
-        const apiKey = '269E440A75CE8313CAC9E266D2CA62DFE024880F89428750C42FA3D1062DD89CE2D7DD1648897EC9E41DFE9AB3F8D0F0';
-
         var formData = new URLSearchParams();
         formData.append("apikey", apiKey);
         formData.append("subject", 'Validation pin code: ' + otp);
