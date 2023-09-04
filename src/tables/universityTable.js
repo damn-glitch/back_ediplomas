@@ -7,7 +7,17 @@ async function createUniversityTable(db) {
             (
                 id SERIAL PRIMARY KEY,
                 name TEXT,
-                city TEXT
+                city TEXT,
+                email TEXT UNIQUE,
+                number_of_students INT,
+                email_validated BOOL,
+                description TEXT,
+                phone TEXT,
+                rating TEXT,
+                gpa FLOAT,
+                main_photo TEXT,
+                number_of_graduates INT,
+                number_of_best_students INT,
             )
         `)
                 // db.query(`insert into universities
