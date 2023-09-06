@@ -2,7 +2,7 @@
 
 async function createRolesTable(db) {
     try {
-        console.log("createRolesTable");
+        console.log("createRolesTable here");
         await db.query(`
             CREATE TABLE IF NOT EXISTS roles
             (
@@ -10,6 +10,7 @@ async function createRolesTable(db) {
                 name TEXT
             );
         `);
+        console.log('Roles table created or already exists');
 
         const roles = await db.query(`SELECT * FROM roles`);
         if (roles.rows.length === 0) {

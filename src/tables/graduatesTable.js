@@ -19,10 +19,8 @@ async function createGraduatesTable(db) {
             email TEXT UNIQUE,
             status BOOL,
             address TEXT,
-            description TEXT
-            constraint fk_university_id
-            foreign key (university_id)
-            references universities( id )
+            description TEXT,
+            CONSTRAINT fk_university_id FOREIGN KEY (university_id) REFERENCES universities(id)
         )
         `)
     console.log('Graduates table created or already exists');

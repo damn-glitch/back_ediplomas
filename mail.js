@@ -18,7 +18,7 @@ app.get('/validate-otp', (req, res) => {
       };
 
       axios.get(url, { params: queryParams })
-        .then(response => {
+        .then(() => {
           res.json({ message: 'OTP sent successfully', otp: generatedOtp });
         })
         .catch(error => {

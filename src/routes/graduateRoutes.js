@@ -51,7 +51,7 @@ router.get('/graduate-details', authenticate, validateName, async (req, res) => 
   }
 });
 
-router.get('/graduates', authenticate, async (req, res) => {
+router.get('/graduate-details', authenticate, async (req, res) => {
   try {
     const graduates = await db.query('SELECT * FROM graduates');
     res.send(graduates.rows);

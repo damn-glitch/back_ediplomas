@@ -17,11 +17,9 @@ async function createUniversityTable(db) {
                 gpa FLOAT,
                 main_photo TEXT,
                 number_of_graduates INT,
-                number_of_best_students INT,
-            )
+                number_of_best_students INT
+            );
         `)
-                // db.query(`insert into universities
-                //           values (1, 'KBTU', 'Алматы')`)
         console.log('Universities table created or already exists');
         }
         catch (error) {

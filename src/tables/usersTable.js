@@ -15,8 +15,7 @@ async function createUsersTable(db) {
                 vacancies INT,
                 employers INT,
                 main_photo TEXT,
-                constraint fk_user_role foreign key (role_id)
-                references roles(id)
+                CONSTRAINT fk_user_role FOREIGN KEY (role_id) REFERENCES roles(id)
             );
         `)
         console.log('Users table created or already exists');
