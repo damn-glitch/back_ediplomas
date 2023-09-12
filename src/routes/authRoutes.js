@@ -4,14 +4,15 @@ const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 const { authenticate } = require('../middleware/authenticate');
 
-const router = express.Router();
+const router = require('./router');
+
 const universityEmailLists = ['info@jasaim.kz', 'maxim.tsoy@nu.edu.kz', 'alisher.beisembekov@jasaim.kz', 'a.nurgalieva@kbtu.kz']
 
-router.post('/login', authenticate, async (req, res) => {
+router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const user = await db.query('SELECT * FROM users INNER JOIN roles ON users.role_id = roles.id WHERE email = $1', [email]);
+        const user = await db.query('SELECT *, users.id FROM users INNER JOIN roles ON users.role_id = roles.id WHERE email = $1', [email]);
 
         if (user.rows.length === 0) {
             return res.status(400).send('Invalid email or password.');
@@ -30,8 +31,8 @@ router.post('/login', authenticate, async (req, res) => {
 
         const token = jwt.sign({
             id: user.rows[0].id,
-            role: user.rows[0].name 
-        }, 'process.env.JWT_PRIVATE_KEY'); 
+            role: user.rows[0].name
+        }, 'process.env.JWT_PRIVATE_KEY');
 
         res.header('x-auth-token', token).send({
             id: user.rows[0].id,
@@ -46,4 +47,3 @@ router.post('/login', authenticate, async (req, res) => {
     }
 });
 
-module.exports = router;

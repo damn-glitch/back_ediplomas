@@ -1,7 +1,7 @@
 const express = require('express');
 const { authenticate } = require('../middleware/authenticate');
 const db = require('../config/database');
-const router = express.Router();
+const router = require('./router');
 
 const validateName = (req, res, next) => {
   const name = req.query.name;
@@ -61,4 +61,3 @@ router.get('/graduate-details', authenticate, async (req, res) => {
   }
 });
 
-module.exports = router;

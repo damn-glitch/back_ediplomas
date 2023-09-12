@@ -1,11 +1,9 @@
 // routes/otp.js
-
 const express = require('express');
-const axios = require('axios');
-const db = require('../config/database'); 
+const { authenticate } = require('../middleware/authenticate');
+const db = require('../config/database');
+const router = require('./router');
 const { otp, url, apiKey } = require('../const/constants');
-
-const router = express.Router();
 
 router.post('/get-otp', async (req, res) => {
     const { email } = req.body;
@@ -33,4 +31,3 @@ router.post('/get-otp', async (req, res) => {
     }
 });
 
-module.exports = router;

@@ -1,6 +1,7 @@
 const express = require('express');
 
-const router = express.Router();
+const router = require('./router');
+
 
 // router.get('/dont-touch-this', async (req, res) => {
 //     try {
@@ -52,4 +53,3 @@ const router = express.Router();
 //     }
 // });
 
-module.exports = router;

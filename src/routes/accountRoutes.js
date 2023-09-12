@@ -2,15 +2,15 @@ const express = require('express');
 const { authenticate } = require('../middleware/authenticate'); 
 const db = require('../config/database'); 
 const analytics_Button = 3;
-const router = express.Router();
+const router = require('./router');
 
 router.get('/account', authenticate, async (req, res) => {
     try {
         const user = await db.query(`
-            SELECT id, email, company_name, role_id
+            SELECT users.id, email, company_name, role_id
             FROM users
             INNER JOIN roles ON users.role_id = roles.id
-            WHERE id = $1
+            WHERE users.id = $1
         `, [req.user.id]);
 
         if (user.rows.length > 0) {
@@ -40,7 +40,7 @@ router.put('/account', authenticate, async (req, res) => {
 
     try {
         const result = await db.query(
-            'UPDATE users SET company_name = $1 WHERE id = $2 RETURNING *',
+            'UPDATE users SET company_name = $1 WHERE users.id = $2 RETURNING *',
             [companyName, req.user.id]
         );
 
@@ -55,5 +55,4 @@ router.put('/account', authenticate, async (req, res) => {
     }
 });
 
-module.exports = router;
 

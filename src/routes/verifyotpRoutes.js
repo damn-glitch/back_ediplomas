@@ -2,7 +2,8 @@
 const express = require('express');
 const db = require('../config/database'); 
 
-const router = express.Router();
+const router = require('./router');
+
 
 router.post('/verify-otp', async (req, res) => {
     const { email, code } = req.body;
@@ -31,4 +32,3 @@ router.post('/verify-otp', async (req, res) => {
     }
 });
 
-module.exports = router;

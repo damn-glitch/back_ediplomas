@@ -5,9 +5,10 @@ const db = require('../config/database');
 const { isRestrictedDomain } = require('../middleware/authenticate');
 
 
-const router = express.Router();
+const router = require('./router');
 
-router.post
+
+router.post(
     '/password-reset',
     [
         body('email')
@@ -81,5 +82,4 @@ router.post
             res.status(500).send('Error reseting password.');
         }
 
-    }
-module.exports = router;
+    });

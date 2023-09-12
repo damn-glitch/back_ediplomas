@@ -6,8 +6,12 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/database'); 
 const { isRestrictedDomain } = require('../middleware/authenticate'); 
 const { otp, url, apiKey } = require('../const/constants');
-const router = express.Router();
+const router = require('./router');
 
+
+router.get('/123', (req, res) => {
+    res.json('123');
+})
 router.post(
     '/register',
     [
@@ -86,4 +90,3 @@ router.post(
     }
 );
 
-module.exports = router;

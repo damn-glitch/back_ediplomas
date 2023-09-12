@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../config/database'); 
-const router = express.Router();
+const router = require('./router');
+
 
 router.get('/validate-iin', async (req, res) => {
     let name = req.query.name;
@@ -40,5 +41,4 @@ router.get('/validate-iin', async (req, res) => {
     return res.json(false);
 });
 
-module.exports = router;
 

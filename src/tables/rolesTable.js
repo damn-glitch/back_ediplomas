@@ -9,7 +9,9 @@ async function createRolesTable(db) {
                 id SERIAL PRIMARY KEY,
                 name TEXT
             );
-        `);
+        `).then((response) => {
+            console.log(response);
+        });
         console.log('Roles table created or already exists');
 
         const roles = await db.query(`SELECT * FROM roles`);

@@ -15,29 +15,24 @@ const createOTPTable = require('./src/tables/otpTable');
 
 //const {Pool} = require('pg');
 //const axios = require("axios");
-const router = require('./src/routes/registrationRoutes');
+const router = require('./src/routes/router');
 
-const authRoutes = require('./src/routes/login');
+const accountRoutes = require('./src/routes/accountRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 const dataRoutes = require('./src/routes/dataRoutes');
 const graduateRoutes = require('./src/routes/graduateRoutes');
-const accountRoutes = require('./src/routes/accountRoutes');
+const otpRoutes = require('./src/routes/otpRoutes');
+const passwordResetRoutes = require('./src/routes/passwordResetRoutes');
+const registrationRoutes = require('./src/routes/registrationRoutes');
 const searchRoutes = require('./src/routes/searchRoutes');
 const validateIINRoutes = require('./src/routes/validateIINRoutes');
 const verifyotpRoutes = require('./src/routes/verifyotpRoutes');
-const passwordResetRoutes = require('./src/routes/passwordResetRoutes');
+const db = require('./src/config/database');
 
 app.use(cors());
 app.use(bodyParser.json({limit: '10mb'}));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
-app.use('/register', router);
-app.use('/login', authRoutes);
-app.use('/dataRoutes', dataRoutes);
-app.use('/graduate-details', graduateRoutes);
-app.use('/account', accountRoutes);
-app.use('/search', searchRoutes);
-app.use('/validate-iin', validateIINRoutes);
-app.use('/verify-otp', verifyotpRoutes);
-app.use('/password-reset', passwordResetRoutes);
+app.use('/', router);
 
 const fs = require('fs');
 const {Client} = require('pg');
@@ -46,14 +41,6 @@ const caCert = fs.readFileSync('ca-certificate.crt');
 
 const startServer = async () => {
     try {
-        const db = new Client({
-            host: 'localhost', 
-            port: 5432,
-            database: 'postgres',
-            user: 'postgres',
-            password: "rootUser", 
-
-        });
         db.connect(); // Initialize the database connection
         console.log('Connected to the PostgreSQL database');
 
@@ -74,7 +61,9 @@ const startServer = async () => {
 
 startServer();
 
-
+router.get('/', async (req, res) => {
+    res.json("Hi page");
+})
 
 
 
