@@ -4,10 +4,10 @@ const { authenticate } = require('../middleware/authenticate');
 const db = require('../config/database');
 const router = require('./router');
 const { otp, url, apiKey } = require('../const/constants');
+const axios = require("axios");
 
 router.post('/get-otp', async (req, res) => {
     const { email } = req.body;
-
     try {
         var formData = new URLSearchParams();
         formData.append("apikey", apiKey);
@@ -22,8 +22,9 @@ router.post('/get-otp', async (req, res) => {
         }
 
         // Store the OTP in the database
-        await db.query('INSERT INTO otp_table (email, otp) VALUES ($1, $2)', [email, otp]);
-
+        console.log(email, otp);
+        let data = await db.query('INSERT INTO otp_table (email, otp) VALUES ($1, $2)', [email, otp]);
+        console.log(data);
         res.json({ message: 'OTP sent successfully', data: response.data });
     } catch (error) {
         console.error('Error sending OTP:', error);

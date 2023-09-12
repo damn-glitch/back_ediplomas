@@ -10,7 +10,7 @@ router.post('/verify-otp', async (req, res) => {
 
     try {
         const otpResult = await db.query(
-            'SELECT otp FROM otp_table WHERE email = $1 ORDER BY created_at DESC LIMIT 1',
+            'SELECT otp FROM otp_table WHERE email = $1 ORDER BY created_at DESC',
             [email]
         );
 
@@ -25,10 +25,11 @@ router.post('/verify-otp', async (req, res) => {
                            SET email_validated = true
                            WHERE email = $1`, [email]);
             return res.json(true);
-        } 
+        }
     } catch (error) {
         console.error('Error verifying OTP:', error);
         res.status(500).json({ error: 'Error verifying OTP:' + error });
     }
+    res.json(false)
 });
 
