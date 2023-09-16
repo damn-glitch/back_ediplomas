@@ -17,16 +17,11 @@ const createOTPTable = require('./src/tables/otpTable');
 //const axios = require("axios");
 const router = require('./src/routes/router');
 
-const accountRoutes = require('./src/routes/accountRoutes');
+const accountRoutes = require('./src/routes/userRoutes');
 const authRoutes = require('./src/routes/authRoutes');
-const dataRoutes = require('./src/routes/dataRoutes');
 const graduateRoutes = require('./src/routes/graduateRoutes');
 const otpRoutes = require('./src/routes/otpRoutes');
-const passwordResetRoutes = require('./src/routes/passwordResetRoutes');
-const registrationRoutes = require('./src/routes/registrationRoutes');
-const searchRoutes = require('./src/routes/searchRoutes');
 const validateIINRoutes = require('./src/routes/validateIINRoutes');
-const verifyotpRoutes = require('./src/routes/verifyotpRoutes');
 const db = require('./src/config/database');
 
 app.use(cors());
