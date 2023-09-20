@@ -10,7 +10,7 @@ const prefix = "users";
 router.get(`/${prefix}/profile`, authenticate, async (req, res) => {
     try {
         const user = await db.query(`
-            SELECT users.id, email, company_name, role_id
+            SELECT users.id, email, name, role_id
             FROM users
                      INNER JOIN roles ON users.role_id = roles.id
             WHERE users.id = $1
@@ -20,7 +20,7 @@ router.get(`/${prefix}/profile`, authenticate, async (req, res) => {
             const userData = {
                 id: user.rows[0].id,
                 email: user.rows[0].email,
-                companyName: user.rows[0].company_name,
+                companyName: user.rows[0].name,
                 analyticsButton: user.rows[0].role_id === analytics_Button
             };
             res.send(userData);
@@ -35,7 +35,7 @@ router.get(`/${prefix}/profile`, authenticate, async (req, res) => {
 router.get('/account', authenticate, async (req, res) => {
     try {
         const user = await db.query(`
-            SELECT users.id, email, company_name, role_id
+            SELECT users.id, email, name, role_id
             FROM users
                      INNER JOIN roles ON users.role_id = roles.id
             WHERE users.id = $1
@@ -45,7 +45,7 @@ router.get('/account', authenticate, async (req, res) => {
             const userData = {
                 id: user.rows[0].id,
                 email: user.rows[0].email,
-                companyName: user.rows[0].company_name,
+                companyName: user.rows[0].name,
                 analyticsButton: user.rows[0].role_id === analytics_Button
             };
             res.send(userData);
@@ -78,7 +78,7 @@ router.put(
 
         try {
             const result = await db.query(
-                'UPDATE users SET company_name = $1 WHERE users.id = $2 RETURNING *',
+                'UPDATE users SET name = $1 WHERE users.id = $2 RETURNING *',
                 [companyName, req.user.id]
             );
 
@@ -103,7 +103,7 @@ router.put('/account', authenticate, async (req, res) => {
 
     try {
         const result = await db.query(
-            'UPDATE users SET company_name = $1 WHERE users.id = $2 RETURNING *',
+            'UPDATE users SET name = $1 WHERE users.id = $2 RETURNING *',
             [companyName, req.user.id]
         );
 

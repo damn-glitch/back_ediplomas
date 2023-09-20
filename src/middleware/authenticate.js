@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const restrictedDomains = [
-    'gmail.com',
+    // 'gmail.com',
     'mail.ru',
     'outlook.com',
     'yahoo.com',
@@ -30,7 +30,7 @@ function authenticate(req, res, next) {
         req.user = jwt.verify(token, jwtPrivateKey);
         next();
     } catch (error) {
-        res.status(401).send('Invalid token.');
+        res.status(403).send('Invalid token.');
     }
 }
 

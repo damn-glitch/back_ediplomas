@@ -7,7 +7,7 @@ async function createUsersTable(db) {
                 id SERIAL PRIMARY KEY,
                 email TEXT UNIQUE,
                 password TEXT,
-                company_name TEXT,
+                name TEXT,
                 email_validated BOOL,
                 role_id INT,
                 description TEXT,

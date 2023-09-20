@@ -5,7 +5,7 @@ const db = require('../config/database');
 const router = require('./router');
 const {otp, url, apiKey} = require('../const/constants');
 const axios = require("axios");
-const {body} = require("express-validator");
+const {body, validationResult} = require("express-validator");
 const prefix = "otp"
 //old /get-otp
 
@@ -34,7 +34,7 @@ router.post(
             formData.append("to", email);
 
             const response = await axios.post(url, formData);
-
+            console.log(response.data);
             if (response.data.success == false) {
                 return res.status(500).json({error: 'Failed to send OTP.'});
             }
@@ -115,13 +115,13 @@ router.post(
                 await db.query(`UPDATE users
                                 SET email_validated = true
                                 WHERE email = $1`, [email]);
-                return res.json(true);
+                return res.json("success");
             }
         } catch (error) {
             console.error('Error verifying OTP:', error);
-            res.status(500).json({error: 'Error verifying OTP:' + error});
+            return res.status(500).json({error: 'Error verifying OTP:' + error});
         }
-        res.json(false);
+        return res.status(400).json({error: 'Incorrect Code'});
     }
 );
 router.post('/verify-otp', async (req, res) => {
