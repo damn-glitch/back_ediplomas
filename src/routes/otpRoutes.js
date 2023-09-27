@@ -3,7 +3,7 @@ const express = require('express');
 const {authenticate} = require('../middleware/authenticate');
 const db = require('../config/database');
 const router = require('./router');
-const {otp, url, apiKey} = require('../const/constants');
+const {url, apiKey} = require('../const/constants');
 const axios = require("axios");
 const {body, validationResult} = require("express-validator");
 const prefix = "otp"
@@ -26,6 +26,7 @@ router.post(
         const {email} = req.body;
 
         try {
+            const otp = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
             var formData = new URLSearchParams();
             formData.append("apikey", apiKey);
             formData.append("subject", 'Validation pin code: ' + otp);
@@ -35,7 +36,7 @@ router.post(
 
             const response = await axios.post(url, formData);
             console.log(response.data);
-            if (response.data.success == false) {
+            if (response.data.success === false) {
                 return res.status(500).json({error: 'Failed to send OTP.'});
             }
 

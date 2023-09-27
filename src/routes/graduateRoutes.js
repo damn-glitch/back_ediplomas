@@ -60,13 +60,13 @@ router.get(
 
             if (user.rows.length > 0) {
                 const data = prepareGraduateDetails(user.rows[0]);
-                res.json(data);
+                return res.json(data);
             } else {
-                res.status(404).send('Graduate not found.');
+                return res.status(404).send('Graduate not found.');
             }
         } catch (error) {
             console.error('Error fetching graduate details:', error);
-            res.status(500).send('Error fetching graduate details.');
+            return res.status(500).send('Error fetching graduate details.');
         }
     }
 );
@@ -77,13 +77,13 @@ router.get('/graduate-details', authenticate, validateName, async (req, res) => 
 
         if (user.rows.length > 0) {
             const data = prepareGraduateDetails(user.rows[0]);
-            res.json(data);
+            return res.json(data);
         } else {
-            res.status(404).send('Graduate not found.');
+            return res.status(404).send('Graduate not found.');
         }
     } catch (error) {
         console.error('Error fetching graduates details:', error);
-        res.status(500).send('Error fetching graduates details.');
+        return res.status(500).send('Error fetching graduates details.');
     }
 });
 
@@ -91,19 +91,19 @@ router.get('/graduate-details', authenticate, validateName, async (req, res) => 
 router.get(`/${prefix}`, authenticate, async (req, res) => {
     try {
         const graduates = await db.query('SELECT * FROM graduates');
-        res.send(graduates.rows);
+        return res.send(graduates.rows);
     } catch (error) {
         console.error('Error fetching graduates:', error);
-        res.status(500).send('Error fetching graduates.');
+        return res.status(500).send('Error fetching graduates.');
     }
 });
 router.get('/graduate-details', authenticate, async (req, res) => {
     try {
         const graduates = await db.query('SELECT * FROM graduates');
-        res.send(graduates.rows);
+        return res.send(graduates.rows);
     } catch (error) {
         console.error('Error fetching graduates:', error);
-        res.status(500).send('Error fetching graduates.');
+        return res.status(500).send('Error fetching graduates.');
     }
 });
 
@@ -150,7 +150,7 @@ router.get(
     ],
     async (req, res) => {
         const errors = validationResult(req);
-
+        return res.json("[]");
         if (!errors.isEmpty()) {
             return res.status(400).json(errors);
         }
@@ -175,7 +175,7 @@ router.get(
         try {
             let searchResult;
             let db_query =
-                `SELECT fullNameEng
+                `SELECT fullnameeng
                  FROM graduates
                           INNER JOIN universities ON graduates.university_id = universities.id
                  WHERE `;
@@ -246,10 +246,11 @@ router.get(
 
             db_query = db_query.substring(0, db_query.length - 5);
             searchResult = await db.query(db_query, queryValues);
-            res.send(searchResult.rows);
+            return res.send(searchResult.rows);
         } catch (error) {
             console.error('Error searching graduates:', error);
-            res.status(500).send('Error searching graduates.');
+            return res.status(500).send('Error searching graduates.');
         }
+        return res.send([]);
     }
 );
