@@ -2,7 +2,7 @@ const express = require('express');
 const {authenticate} = require('../middleware/authenticate');
 const db = require('../config/database');
 const router = require('./router');
-const {body} = require("express-validator");
+const {body, validationResult} = require("express-validator");
 
 const prefix = "graduates";
 const validateName = (req, res, next) => {
@@ -110,11 +110,6 @@ router.get('/graduate-details', authenticate, async (req, res) => {
 router.get(
     `/${prefix}/search`,
     [
-        body('name')
-            .notEmpty()
-            .withMessage('Name is required.')
-            .isString()
-            .withMessage('Name must be a string.'),
         body('gpaL')
             .optional()
             .isFloat()
@@ -150,7 +145,6 @@ router.get(
     ],
     async (req, res) => {
         const errors = validationResult(req);
-        return res.json("[]");
         if (!errors.isEmpty()) {
             return res.status(400).json(errors);
         }

@@ -19,6 +19,7 @@ const router = require('./src/routes/router');
 
 const accountRoutes = require('./src/routes/userRoutes');
 const authRoutes = require('./src/routes/authRoutes');
+const smartContractRoutes = require('./src/routes/contractRoutes');
 const graduateRoutes = require('./src/routes/graduateRoutes');
 const otpRoutes = require('./src/routes/otpRoutes');
 const validateIINRoutes = require('./src/routes/validateIINRoutes');

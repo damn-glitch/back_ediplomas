@@ -2,12 +2,9 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/database');
-const {authenticate, isRestrictedDomain} = require('../middleware/authenticate');
-const {otp, url, apiKey} = require('../const/constants');
+const {isRestrictedDomain} = require('../middleware/authenticate');
 const router = require('./router');
 const {body, validationResult} = require("express-validator");
-const {stringify} = require("body-parser/lib/types/json");
-const {post} = require("axios");
 const prefix = "auth"
 const universityEmailLists = ['info@jasaim.kz', 'maxim.tsoy@nu.edu.kz', 'alisher.beisembekov@jasaim.kz', 'a.nurgalieva@kbtu.kz']
 //old /login
@@ -124,8 +121,8 @@ router.post(`/${prefix}/register`, [body('email')
         const hashedPassword = await bcrypt.hash(password, salt);
 
         let roles = await db.query(`select *
-                                   from roles
-                                   where name like $1
+                                    from roles
+                                    where name like $1
         `, [`%${role}%`])
         let role_id = 3;
         if (roles.rows.length) {
@@ -140,27 +137,26 @@ router.post(`/${prefix}/register`, [body('email')
     }
 });
 
-router.post('/register', [body('name')
-    .notEmpty()
-    .withMessage('Fields name is required'), body('email')
-    .isEmail()
-    .withMessage('Please enter a valid email address.')
-    .custom((value) => {
-        if (isRestrictedDomain(value)) {
-            throw new Error('Registration with this email domain is not allowed.');
-        }
-        return true;
-    }), body('password')
-    .isLength({min: 6})
-    .withMessage('Password must be at least 6 characters long.'), body('repassword')
-    .notEmpty()
-    .custom((value, {req}) => {
-        if (value !== req.body.password) {
-            return false;
-        }
-        return true;
-    })
-    .withMessage('Passwords are not the same.'), body('companyName').notEmpty().withMessage('Company name is required.'),], async (req, res) => {
+router.post('/register', [
+    body('email')
+        .isEmail()
+        .withMessage('Please enter a valid email address.')
+        .custom((value) => {
+            if (isRestrictedDomain(value)) {
+                throw new Error('Registration with this email domain is not allowed.');
+            }
+            return true;
+        }), body('password')
+        .isLength({min: 6})
+        .withMessage('Password must be at least 6 characters long.'), body('repassword')
+        .notEmpty()
+        .custom((value, {req}) => {
+            if (value !== req.body.password) {
+                return false;
+            }
+            return true;
+        })
+        .withMessage('Passwords are not the same.'), body('companyName').notEmpty().withMessage('Company name is required.'),], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json(errors);
@@ -169,7 +165,8 @@ router.post('/register', [body('name')
     const {email, password, companyName, role} = req.body;
 
     try {
-        const existingUser = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+
+        let existingUser = await db.query('SELECT * FROM users WHERE email = $1', [email,]);
 
         if (existingUser.rows.length > 0) {
             return res.status(400).send('Email already registered.');
@@ -178,15 +175,8 @@ router.post('/register', [body('name')
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        let role = await db.query(`select *
-                                   from roles
-                                   where name like $1
-        `, [`%${role}%`])
         let role_id = 3;
-        if (role.rows.length) {
-            role_id = role.rows[0].id;
-        }
-        await db.query('INSERT INTO users (email, password, name, role_id, email_validated) VALUES ($1, $2, $3, $4, true)', [email, hashedPassword, companyName, role_id]);
+        await db.query('INSERT INTO users (email, password, role_id, email_validated) VALUES ($1, $2, $3, true)', [email, hashedPassword, role_id, ]);
         return res.json("success");
 
     } catch (error) {
@@ -431,9 +421,11 @@ router.post(`/${prefix}/authorize-with-ds`, async (req, res) => {
             id: user.rows[0].id, role: user.rows[0].name
         }, 'process.env.JWT_PRIVATE_KEY');
 
-
+        let role = await db.query('select * from roles where id = $1', [user.rows[0].role_id])
+        console.log("role_id" , role.rows[0].name);
         return res.header('x-auth-token', token).send({
-            token: token
+            token: token,
+            role: role.rows[0].name
         });
 
     } catch (error) {

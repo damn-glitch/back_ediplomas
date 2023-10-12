@@ -18,7 +18,6 @@ function isRestrictedDomain(email) {
 
 function authenticate(req, res, next) {
     const token = req.header('x-auth-token');
-    console.log(token);
     if (!token) return res.status(400).send('Access denied. No token provided.');
 
     try {
@@ -26,7 +25,6 @@ function authenticate(req, res, next) {
         if (!jwtPrivateKey){
             throw new Error('JWT private key is not set');
         }
-        console.log(jwtPrivateKey)
         req.user = jwt.verify(token, jwtPrivateKey);
         next();
     } catch (error) {
