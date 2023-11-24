@@ -5,7 +5,7 @@ const axios = require("axios");
 const {body, validationResult} = require("express-validator");
 const prefix = "diploma"
 
-const attributes = [
+const diplomaAttributes = [
     "diploma_distinction_en",
     "diploma_distinction_ru",
     "diploma_distinction_kz",
@@ -87,8 +87,8 @@ const getDiplomaFields = async (diploma_id) => {
         return [];
     }
     let data = item.rows[0];
-    for (let i = 0; i < attributes.length; i++) {
-        const key = attributes[i];
+    for (let i = 0; i < diplomaAttributes.length; i++) {
+        const key = diplomaAttributes[i];
         if (item.rows[0][key] !== undefined) continue;
         let attr = await db.query(
             'select * from content_fields where content_id = $1 and type = $2 and deleted_at IS NULL',

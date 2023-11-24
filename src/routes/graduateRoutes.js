@@ -86,6 +86,21 @@ router.get('/graduate-details', authenticate, validateName, async (req, res) => 
         return res.status(500).send('Error fetching graduates details.');
     }
 });
+const getGraduateDetails = async (id) => {
+    try {
+        const user = await db.query('SELECT * FROM graduates WHERE id = $1', [id]);
+
+        if (user.rows.length > 0) {
+            const data = prepareGraduateDetails(user.rows[0]);
+            return res.json(data);
+        } else {
+            return res.status(404).send('Graduate not found.');
+        }
+    } catch (error) {
+        console.error('Error fetching graduates details:', error);
+        return res.status(500).send('Error fetching graduates details.');
+    }
+}
 
 //old /graduate-details
 router.get(`/${prefix}`, authenticate, async (req, res) => {
@@ -97,15 +112,7 @@ router.get(`/${prefix}`, authenticate, async (req, res) => {
         return res.status(500).send('Error fetching graduates.');
     }
 });
-router.get('/graduate-details', authenticate, async (req, res) => {
-    try {
-        const graduates = await db.query('SELECT * FROM graduates');
-        return res.send(graduates.rows);
-    } catch (error) {
-        console.error('Error fetching graduates:', error);
-        return res.status(500).send('Error fetching graduates.');
-    }
-});
+
 
 router.get(
     `/${prefix}/search`,

@@ -5,6 +5,17 @@ const analytics_Button = 3;
 const router = require('./router');
 const {body, validationResult} = require("express-validator");
 const {json} = require("express");
+const diplomaAttributes = [
+    "diploma_distinction_en",
+    "diploma_distinction_ru",
+    "diploma_distinction_kz",
+    "diploma_degree_en",
+    "diploma_degree_ru",
+    "diploma_degree_kz",
+    "diploma_protocol_en",
+    "diploma_protocol_ru",
+    "diploma_protocol_kz",
+]
 
 const prefix = "users";
 const userAttributes = [
@@ -16,8 +27,11 @@ const userAttributes = [
     'university_id',
     'phone',
     'name',
+    'iin',
+    'gpa',
+    'date_of_birth',
+    'address',
     'description',
-    'web_link',
     'instagram_link',
     'telegram_link',
     'youtube_link',
@@ -27,22 +41,16 @@ const userAttributes = [
     "certificates",
 ];
 const universityAttributes = [
-    "email",
-    'avatar',
-    'phone',
-    'name',
-    'phone',
+    'gallery',
     "student_amount",
     "graduate_amount",
     "highlighting_amount",
     'description',
     'web_link',
-    'instagram_link',
-    'telegram_link',
-    'youtube_link',
-    'linkedin_link',
-    'facebook_link',
+    'smart_contract_links',
 ];
+
+
 //old /account
 router.get(`/${prefix}/profile`, authenticate, async (req, res) => {
     try {
@@ -55,7 +63,17 @@ router.get(`/${prefix}/profile`, authenticate, async (req, res) => {
 
         if (user.rows.length > 0) {
             let data = await getUserData(req.user.id);
-            return res.json(data);
+            let role = user.rows[0].role_id;
+            console.log("ROLE", role);
+            let newData = {};
+            if (role == 3) {
+                let temp = await getDiplomaData(user.rows[0].id);
+                console.log(temp)
+                newData = {...data, ...temp}
+                console.log(data)
+                console.log(newData)
+            }
+            return res.json(newData);
         } else {
             return res.status(404).send('User not found.');
         }
@@ -186,6 +204,29 @@ const getUserData = async (user_id) => {
         let attr = await db.query(
             'select * from content_fields where content_id = $1 and type = $2',
             [user_id, key]
+        );
+        data[key] = attr.rows.length ? attr.rows[0].value : null;
+    }
+    return data;
+}
+const getDiplomaData = async (user_id) => {
+    const diploma = await db.query(`
+        SELECT *
+        FROM diplomas
+        WHERE diplomas.user_id = $1
+    `, [user_id]);
+
+    if (!diploma.rows.length) {
+        return [];
+    }
+    let data = diploma.rows[0];
+    let diploma_id = data.id;
+    for (let i = 0; i < diplomaAttributes.length; i++) {
+        const key = diplomaAttributes[i];
+        if (diploma.rows[0][key] !== undefined) continue;
+        let attr = await db.query(
+            'select * from content_fields where content_id = $1 and type = $2',
+            [diploma_id, key]
         );
         data[key] = attr.rows.length ? attr.rows[0].value : null;
     }
