@@ -85,25 +85,27 @@ router.post('/login', async (req, res) => {
 
 
 // old /register
-router.post(`/${prefix}/register`, [body('email')
-    .isEmail()
-    .withMessage('Please enter a valid email address.')
-    .custom((value) => {
-        if (isRestrictedDomain(value)) {
-            throw new Error('Registration with this email domain is not allowed.');
-        }
-        return true;
-    }), body('password')
-    .isLength({min: 6})
-    .withMessage('Password must be at least 6 characters long.'), body('repassword')
-    .notEmpty()
-    .custom((value, {req}) => {
-        if (value !== req.body.password) {
-            return false;
-        }
-        return true;
-    })
-    .withMessage('Passwords are not the same.'),], async (req, res) => {
+router.post(`/${prefix}/register`, [
+    body('email')
+        .isEmail()
+        .withMessage('Please enter a valid email address.')
+        .custom((value) => {
+            if (isRestrictedDomain(value)) {
+                throw new Error('Registration with this email domain is not allowed.');
+            }
+            return true;
+        }),
+    body('password')
+        .isLength({min: 6})
+        .withMessage('Password must be at least 6 characters long.'), body('repassword')
+        .notEmpty()
+        .custom((value, {req}) => {
+            if (value !== req.body.password) {
+                return false;
+            }
+            return true;
+        })
+        .withMessage('Passwords are not the same.'),], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json(errors);
@@ -138,6 +140,77 @@ router.post(`/${prefix}/register`, [body('email')
 });
 
 router.post('/register', [
+        body('email')
+            .isEmail()
+            .withMessage('Please enter a valid email address.')
+            .custom((value) => {
+                if (isRestrictedDomain(value)) {
+                    throw new Error('Registration with this email domain is not allowed.');
+                }
+                return true;
+            }), body('password')
+            .isLength({min: 6})
+            .withMessage('Password must be at least 6 characters long.'), body('repassword')
+            .notEmpty()
+            .custom((value, {req}) => {
+                if (value !== req.body.password) {
+                    return false;
+                }
+                return true;
+            })
+            .withMessage('Passwords are not the same.'), body('companyName').notEmpty().withMessage('Company name is required.'),],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json(errors);
+        }
+
+        const {email, password, companyName, role} = req.body;
+
+        try {
+
+            let existingUser = await db.query('SELECT * FROM users WHERE email = $1', [email,]);
+
+            if (existingUser.rows.length > 0) {
+                return res.status(400).send('Email already registered.');
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+
+            let role_id = 3;
+            await db.query('INSERT INTO users (email, password, role_id, email_validated) VALUES ($1, $2, $3, true)', [email, hashedPassword, role_id,]);
+            return res.json("success");
+
+        } catch (error) {
+            console.error('Error registering the user:', error);
+            return res.status(500).send('Error registering the user.');
+        }
+
+        // try {
+        //     var formData = new URLSearchParams();
+        //     formData.append("apikey", apiKey);
+        //     formData.append("subject", 'Validation pin code: ' + otp);
+        //     formData.append("from", 'info@jasaim.kz');
+        //     formData.append("bodyHtml", 'Use it to authenticate on E-Diplomas');
+        //     formData.append("to", email);
+        //
+        //     const response = await axios.post(url, formData);
+        //     if (response.data.success == false) {
+        //         return res.status(500).json({error: 'Failed to send OTP.'});
+        //     }
+        //     console.log(response.data);
+        //
+        //     await db.query('INSERT INTO otp_table (email, otp) VALUES ($1, $2)', [email, otp]);
+        //
+        //     return res.json({message: 'OTP sent successfully ' + response.data});
+        // } catch (error) {
+        //     console.error('Error sending OTP:', error);
+        //     return res.status(500).json({error: 'Failed to send OTP.' + " Error:" + error});
+        // }
+    });
+
+router.post('/password-reset', [
     body('email')
         .isEmail()
         .withMessage('Please enter a valid email address.')
@@ -146,9 +219,11 @@ router.post('/register', [
                 throw new Error('Registration with this email domain is not allowed.');
             }
             return true;
-        }), body('password')
+        }),
+    body('password')
         .isLength({min: 6})
-        .withMessage('Password must be at least 6 characters long.'), body('repassword')
+        .withMessage('Password must be at least 6 characters long.'),
+    body('repassword')
         .notEmpty()
         .custom((value, {req}) => {
             if (value !== req.body.password) {
@@ -156,78 +231,10 @@ router.post('/register', [
             }
             return true;
         })
-        .withMessage('Passwords are not the same.'), body('companyName').notEmpty().withMessage('Company name is required.'),], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json(errors);
-    }
-
-    const {email, password, companyName, role} = req.body;
-
-    try {
-
-        let existingUser = await db.query('SELECT * FROM users WHERE email = $1', [email,]);
-
-        if (existingUser.rows.length > 0) {
-            return res.status(400).send('Email already registered.');
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        let role_id = 3;
-        await db.query('INSERT INTO users (email, password, role_id, email_validated) VALUES ($1, $2, $3, true)', [email, hashedPassword, role_id, ]);
-        return res.json("success");
-
-    } catch (error) {
-        console.error('Error registering the user:', error);
-        return res.status(500).send('Error registering the user.');
-    }
-
-    // try {
-    //     var formData = new URLSearchParams();
-    //     formData.append("apikey", apiKey);
-    //     formData.append("subject", 'Validation pin code: ' + otp);
-    //     formData.append("from", 'info@jasaim.kz');
-    //     formData.append("bodyHtml", 'Use it to authenticate on E-Diplomas');
-    //     formData.append("to", email);
-    //
-    //     const response = await axios.post(url, formData);
-    //     if (response.data.success == false) {
-    //         return res.status(500).json({error: 'Failed to send OTP.'});
-    //     }
-    //     console.log(response.data);
-    //
-    //     await db.query('INSERT INTO otp_table (email, otp) VALUES ($1, $2)', [email, otp]);
-    //
-    //     return res.json({message: 'OTP sent successfully ' + response.data});
-    // } catch (error) {
-    //     console.error('Error sending OTP:', error);
-    //     return res.status(500).json({error: 'Failed to send OTP.' + " Error:" + error});
-    // }
-});
-
-router.post('/password-reset', [body('email')
-    .isEmail()
-    .withMessage('Please enter a valid email address.')
-    .custom((value) => {
-        if (isRestrictedDomain(value)) {
-            throw new Error('Registration with this email domain is not allowed.');
-        }
-        return true;
-    }), body('password')
-    .isLength({min: 6})
-    .withMessage('Password must be at least 6 characters long.'), body('repassword')
-    .notEmpty()
-    .custom((value, {req}) => {
-        if (value !== req.body.password) {
-            return false;
-        }
-        return true;
-    })
-    .withMessage('Passwords are not the same.'), body('code')
-    .notEmpty()
-    .withMessage('Verification code must not be empty.')], async (req, res) => {
+        .withMessage('Passwords are not the same.'),
+    body('code')
+        .notEmpty()
+        .withMessage('Verification code must not be empty.')], async (req, res) => {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -292,7 +299,8 @@ router.post('/password-reset', [body('email')
     })
     .withMessage('Passwords are not the same.'), body('code')
     .notEmpty()
-    .withMessage('Verification code must not be empty.')], async (req, res) => {
+    .withMessage('Verification code must not be empty.')],
+    async (req, res) => {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -348,7 +356,10 @@ router.post(`/${prefix}/authorize-with-ds`, async (req, res) => {
         // Initialize an empty object to store the parsed data
         const parsedData = {};
         const dict = {
-            "CN": "name", "SURNAME": "surname", "SERIALNUMBER": "iin", "G": "middlename",
+            "CN": "name",
+            "SURNAME": "surname",
+            "SERIALNUMBER": "iin",
+            "G": "middlename",
         }
         // Iterate through the key-value pairs and split them into keys and values
         for (const pair of keyValuePairs) {
@@ -422,7 +433,7 @@ router.post(`/${prefix}/authorize-with-ds`, async (req, res) => {
         }, 'process.env.JWT_PRIVATE_KEY');
 
         let role = await db.query('select * from roles where id = $1', [user.rows[0].role_id])
-        console.log("role_id" , role.rows[0].name);
+        console.log("role_id", role.rows[0].name);
         return res.header('x-auth-token', token).send({
             token: token,
             role: role.rows[0].name

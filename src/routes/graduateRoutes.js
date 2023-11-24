@@ -44,7 +44,7 @@ router.get(
             .notEmpty()
             .withMessage('Name is required.')
             .isString()
-            .withMessage('Name must be a string.')
+            .withMessage('Name must be a string.'),
     ],
     authenticate,
     async (req, res) => {

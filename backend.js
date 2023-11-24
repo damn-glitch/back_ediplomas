@@ -23,6 +23,7 @@ const smartContractRoutes = require('./src/routes/contractRoutes');
 const graduateRoutes = require('./src/routes/graduateRoutes');
 const otpRoutes = require('./src/routes/otpRoutes');
 const validateIINRoutes = require('./src/routes/validateIINRoutes');
+const diplomaRoutes = require('./src/routes/diplomaRoutes');
 const db = require('./src/config/database');
 
 app.use(cors());

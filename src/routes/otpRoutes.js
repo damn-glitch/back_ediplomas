@@ -9,6 +9,7 @@ const {body, validationResult} = require("express-validator");
 const prefix = "otp"
 //old /get-otp
 
+
 router.post(
     `/${prefix}/send`,
     [
@@ -30,10 +31,9 @@ router.post(
             var formData = new URLSearchParams();
             formData.append("apikey", apiKey);
             formData.append("subject", 'Validation pin code: ' + otp);
-            formData.append("from", 'info@jasaim.kz');
+            formData.append("from", 'verify@jasaim.kz');
             formData.append("bodyHtml", 'Use it to authenticate on E-Diplomas');
             formData.append("to", email);
-
             const response = await axios.post(url, formData);
             console.log(response.data);
             if (response.data.success === false) {
@@ -50,6 +50,58 @@ router.post(
             console.error('Error sending OTP:', error);
             return res.status(500).json({error: 'Failed to send OTP.'});
         }
+    }
+);
+router.post(
+    `/${prefix}/sendSMTP`,
+    [
+        body('email')
+            .isEmail()
+            .withMessage('Please enter a valid email address.')
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json(errors);
+        }
+        try {
+            const nodemailer = require('nodemailer');
+
+            // Create a transporter object using SMTP
+            const transporter = nodemailer.createTransport({
+                host: 'smtp.yandex.ru',
+                port: 465, // Port for SSL/TLS
+                secure: true, // Use secure SSL/TLS connection
+                auth: {
+                    user: 'info@jasaim.kz', // Your Yandex email account
+                    pass: 'owueecvpxjarfhho', // Application-specific password
+                },
+            });
+            const {email} = req.body;
+
+            // Email data
+            const mailOptions = {
+                from: 'info@jasaim.kz',
+                to: email, // The email address of the recipient
+                subject: 'Test Email',
+                text: 'This is a test email sent from Node.js using SMTP.',
+            };
+
+            // Send the email
+            await transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    console.error('Error sending email:', error);
+                } else {
+                    console.log('Email sent:', info.response);
+                }
+            });
+            res.json("success")
+        } catch (e) {
+            res.status(500).json(e.getMessage());
+        }
+
+
     }
 );
 router.post(`/get-otp`, async (req, res) => {
@@ -107,7 +159,7 @@ router.post(
             );
 
             if (otpResult.rows.length === 0) {
-                return res.status(400).json({error: 'OTP not found'});
+                return res.status(404).json({error: 'OTP not found'});
             }
 
             const lastOTP = otpResult.rows[0].otp;
@@ -125,6 +177,7 @@ router.post(
         return res.status(400).json({error: 'Incorrect Code'});
     }
 );
+
 router.post('/verify-otp', async (req, res) => {
     const {email, code} = req.body;
 
