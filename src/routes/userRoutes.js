@@ -286,3 +286,127 @@ router.post(`/${prefix}/sign-xml-with-ds`, [body('xml')
         }
     });
 
+const getFavoriteDiplomas = async (user_id) => {
+    const favoriteDiplomas = await db.query(
+        `
+            SELECT *
+            FROM favorite_diplomas
+            WHERE user_id = $1
+        `,
+        [user_id]
+    );
+
+    const diplomaIds = favoriteDiplomas.rows.map((diploma) => diploma.diploma_id);
+
+    const diplomas = await db.query(
+        `
+            SELECT *
+            FROM diplomas
+            WHERE id = ANY($1)
+        `,
+        [diplomaIds]
+    );
+
+    return diplomas.rows;
+}
+
+router.post(
+    `/${prefix}/favorite-diplomas/toogle`,
+    [
+        body("diploma_id").notEmpty().withMessage("Diploma ID is required."),
+    ],
+    authenticate,
+    async (req, res) => {
+        const errors = validationResult(req);
+    
+        if (!errors.isEmpty()) {
+            return res.status(400).json(errors);
+        }
+
+        const { diploma_id } = req.body;
+    
+        try {
+            const user = await db.query(
+                `
+                    SELECT *
+                    FROM users
+                    WHERE id = $1
+                `,
+                [req.user.id]
+            );
+    
+            if (user.rows.length <= 0) {
+                return res.status(404).send("User not found.");
+            }
+
+            const favoriteDiploma = await db.query(
+                `
+                    SELECT *
+                    FROM favorite_diplomas
+                    WHERE user_id = $1 AND diploma_id = $2
+                `,
+                [req.user.id, diploma_id]
+            );
+
+            if (favoriteDiploma.rows.length > 0) {
+                db.query(
+                    `
+                        DELETE FROM favorite_diplomas
+                        WHERE user_id = $1 AND diploma_id = $2
+                    `,
+                    [req.user.id, diploma_id]
+                );
+
+                const diplomas = await getFavoriteDiplomas(req.user.id);
+                return res.status(200).json(diplomas);
+            }
+            
+            db.query(
+                `INSERT INTO favorite_diplomas(user_id, diploma_id, created_at)
+                values ($1, $2, $3)`,
+                [req.user.id, diploma_id, new Date()]
+            );
+
+            const diplomas = await getFavoriteDiplomas(req.user.id);
+            return res.status(200).json(diplomas);
+            
+        } catch (error) {
+            console.error("Error adding favorite diploma:", error);
+            return res.status(500).send("Error adding favorite diploma.");
+        }
+});
+
+router.get(
+    `/${prefix}/favorite-diplomas/get`,
+    authenticate,
+    async (req, res) => {
+        const errors = validationResult(req);
+
+        if(!errors.isEmpty()){
+            return res.status(400).json(errors);
+        }
+
+        try{
+            const user = await db.query(
+                `
+                    SELECT *
+                    FROM users
+                    WHERE id = $1
+                `,
+                [req.user.id]
+            );
+
+            if(user.rows.length <= 0){
+                return res.status(404).send("User not found.");
+            }
+
+            const diplomas = await getFavoriteDiplomas(req.user.id);
+
+            return res.status(200).json(diplomas);
+
+        } catch (error) {
+            console.error("Error getting favorite diplomas:", error);
+            return res.status(500).send("Error getting favorite diplomas.");
+        }
+    }
+);
