@@ -33,9 +33,12 @@ app.use('/', router);
 
 const fs = require('fs');
 const {Client} = require('pg');
+const path = require('path');
 
 const caCert = fs.readFileSync('ca-certificate.crt');
 
+// Serve static files from the 'uploads' directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const startServer = async () => {
     try {
         db.connect(); // Initialize the database connection
