@@ -43,7 +43,12 @@ const userAttributes = [
     'facebook_link',
     'resume_link',
     'linkedin_link',
+    'discord_link',
     "certificates",
+    "hired_amount",
+    "vacancy_amount",
+    "branches_amount",
+    "position",
 ];
 const universityAttributes = [
     'gallery',
@@ -54,6 +59,7 @@ const universityAttributes = [
     'web_link',
     'smart_contract_links',
     'average_gpa',
+    'banner',
 ];
 
 const getUserData = async (user_id) => {
@@ -150,9 +156,13 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({storage, fileFilter});
 
+const multiparty = require('multiparty');
+const http = require('http');
+const util = require('util');
 router.post('/upload', upload.single('file'), (req, res) => {
     try {
-        // Access the uploaded file details from req.file
+
+        // // Access the uploaded file details from req.file
         console.log("req.body.file", req.body.file);
         console.log("req.body", req.body);
         console.log("req.file", req.file);
@@ -371,7 +381,7 @@ const getFavoriteDiplomas = async (user_id) => {
         `
             SELECT *
             FROM diplomas
-            WHERE id = ANY($1)
+            WHERE id = ANY ($1)
         `,
         [diplomaIds]
     );
@@ -387,13 +397,13 @@ router.post(
     authenticate,
     async (req, res) => {
         const errors = validationResult(req);
-    
+
         if (!errors.isEmpty()) {
             return res.status(400).json(errors);
         }
 
-        const { diploma_id } = req.body;
-    
+        const {diploma_id} = req.body;
+
         try {
             const user = await db.query(
                 `
@@ -403,7 +413,7 @@ router.post(
                 `,
                 [req.user.id]
             );
-    
+
             if (user.rows.length <= 0) {
                 return res.status(404).send("User not found.");
             }
@@ -412,7 +422,8 @@ router.post(
                 `
                     SELECT *
                     FROM favorite_diplomas
-                    WHERE user_id = $1 AND diploma_id = $2
+                    WHERE user_id = $1
+                      AND diploma_id = $2
                 `,
                 [req.user.id, diploma_id]
             );
@@ -420,8 +431,10 @@ router.post(
             if (favoriteDiploma.rows.length > 0) {
                 db.query(
                     `
-                        DELETE FROM favorite_diplomas
-                        WHERE user_id = $1 AND diploma_id = $2
+                        DELETE
+                        FROM favorite_diplomas
+                        WHERE user_id = $1
+                          AND diploma_id = $2
                     `,
                     [req.user.id, diploma_id]
                 );
@@ -429,21 +442,21 @@ router.post(
                 const diplomas = await getFavoriteDiplomas(req.user.id);
                 return res.status(200).json(diplomas);
             }
-            
+
             db.query(
                 `INSERT INTO favorite_diplomas(user_id, diploma_id, created_at)
-                values ($1, $2, $3)`,
+                 values ($1, $2, $3)`,
                 [req.user.id, diploma_id, new Date()]
             );
 
             const diplomas = await getFavoriteDiplomas(req.user.id);
             return res.status(200).json(diplomas);
-            
+
         } catch (error) {
             console.error("Error adding favorite diploma:", error);
             return res.status(500).send("Error adding favorite diploma.");
         }
-});
+    });
 
 router.get(
     `/${prefix}/favorite-diplomas/get`,
@@ -451,11 +464,11 @@ router.get(
     async (req, res) => {
         const errors = validationResult(req);
 
-        if(!errors.isEmpty()){
+        if (!errors.isEmpty()) {
             return res.status(400).json(errors);
         }
 
-        try{
+        try {
             const user = await db.query(
                 `
                     SELECT *
@@ -465,7 +478,7 @@ router.get(
                 [req.user.id]
             );
 
-            if(user.rows.length <= 0){
+            if (user.rows.length <= 0) {
                 return res.status(404).send("User not found.");
             }
 
