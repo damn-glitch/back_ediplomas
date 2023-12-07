@@ -176,9 +176,8 @@ router.get(
         try {
             let searchResult;
             let db_query =
-                `SELECT fullnameeng
-                 FROM graduates
-                          INNER JOIN universities ON graduates.university_id = universities.id
+                `SELECT name_en
+                 FROM diplomas INNER JOIN universities ON diplomas.university_id = universities.id
                  WHERE `;
             const queryValues = [];
 
@@ -193,7 +192,7 @@ router.get(
                 console.log(value);
                 switch (key) {
                     case 'name':
-                        db_query += `fullNameKz LIKE $${parameterIndex++} AND `;
+                        db_query += `name_kz LIKE $${parameterIndex++} AND `;
                         queryValues.push(`%${value}%`);
                         break;
                     case 'gpa':
