@@ -20,7 +20,9 @@ router.post(`/${prefix}/generate`, async (req, res) => {
     const privateKey = 'db13127e67c2ae2bab95a04f441bdfba70037151f357704c205896eb30ea1070';
 
     // Function to create a new Diplomas contract
-    let diplomaBaseURI = `ipfs://${CID}/`;
+    let diplomaBaseURI = `https://${CID}.ipfs.nftstorage.link/`;
+    // let diplomaBaseURI = `ipfs://${CID}/`;
+    // https://bafybeibmoteyrrcehcv24bh6hyufhrymydshct742hp3malh7nyb4fppom.ipfs.nftstorage.link/
     const adminWallet = "0x984653E3757498e38eE10676e272366D7d45Fe71";
     try {
         const wallet = new ethers.Wallet(privateKey, provider);
@@ -33,15 +35,23 @@ router.post(`/${prefix}/generate`, async (req, res) => {
 
         // Extract the contract address from the receipt
         const contractAddress = receipt.events[0].address; // Adjust the index based on your event structure
+
+        const halfHourAgo = new Date();
+        halfHourAgo.setMinutes(halfHourAgo.getMinutes() - 30);
+
         await db.query(
-            'UPDATE diplomas SET smart_contract_link = $1 WHERE university_id = $2',
-            [university_id, `https://testnet.bscscan.com/address/${contractAddress}`]
+            'UPDATE diplomas SET smart_contract_link = $1 WHERE university_id = $2 AND created_at <= $3',
+            [
+                `https://testnet.bscscan.com/address/${contractAddress}`,
+                university_id ?? 1,
+                halfHourAgo,
+            ]
         );
         console.log('New Diplomas contract created successfully. Contract Address:', contractAddress);
         return res.json(`https://testnet.bscscan.com/address/${contractAddress}`);
     } catch (error) {
         console.error('Error creating new Diplomas contract:', error);
-        return res(error, 500);
+        return res.status(500).json(error);
     }
 
     // Call the function to create a new Diplomas contract with your CID
