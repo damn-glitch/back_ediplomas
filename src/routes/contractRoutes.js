@@ -1,52 +1,10 @@
-const express = require('express');
-const bcrypt = require('bcrypt');
-const db = require('../config/database');
-const {isRestrictedDomain} = require('../middleware/authenticate');
 const router = require('./router');
-const {body, validationResult} = require("express-validator");
 const prefix = "smart-contract"
-const web3 = require('web3');
 const {contractAbi} = require("../const/api");
+const db = require('../config/database');
 
-// router.post('/createNewDiplomaContract', async (req, res) => {
-//     const {email, password} = req.body;
-//
-//
-//     // Initialize Ethereum provider (MetaMask)
-//     // const web3 = Web3();
-//
-//     // FactoryInvest contract address and ABI
-//     const factoryContractAddress = '0xbac7239D8C4313a00AE1BCdE567c1D78bfaC84D7';
-//     // Replace with your factory contract ABI
-//     // Create a contract instance
-//     const factoryContract = new web3.eth.Contract(contractAbi, factoryContractAddress);
-//
-//     // Function to create a new Diplomas contract
-//     // const createNewDiploma = async (
-//     const name = "KBTU";
-//     const symbol = "KB23";
-//     const diplomaBaseURI = "ipfs://bafybeicifpkgrawcktvbxgewklhrhtw6qeqhicob2gtvg2dlyrg66qruha/";
-//     const adminDiploma = "0x984653E3757498e38eE10676e272366D7d45Fe71";
-//     const CID = "bafybeicifpkgrawcktvbxgewklhrhtw6qeqhicob2gtvg2dlyrg66qruha";
-//     // ) => {
-//     try {
-//         const accounts = await window.ethereum.enable();
-//         const senderAddress = accounts[0];
-//
-//         // Call the createNewDiploma function in FactoryInvest contract
-//         const transaction = await factoryContract.methods.createNewDiploma(name, symbol, diplomaBaseURI, adminDiploma, CID).send({
-//             from: senderAddress,
-//         });
-//
-//         console.log('New Diplomas contract created:', transaction.events.newDiplomas.returnValues.addressDiplom);
-//     } catch (error) {
-//         console.error('Error creating new Diplomas contract:', error);
-//     }
-//     // };
-// });
 router.post(`/${prefix}/generate`, async (req, res) => {
-    const { name, symbol, CID } = req.body;
-    console.log(name, symbol, CID, new Date());
+    const {name, symbol, CID, university_id} = req.body;
 
     const ethers = require('ethers');
 
@@ -75,12 +33,15 @@ router.post(`/${prefix}/generate`, async (req, res) => {
 
         // Extract the contract address from the receipt
         const contractAddress = receipt.events[0].address; // Adjust the index based on your event structure
-
+        await db.query(
+            'UPDATE diplomas SET smart_contract_link = $1 WHERE university_id = $2',
+            [university_id, `https://testnet.bscscan.com/address/${contractAddress}`]
+        );
         console.log('New Diplomas contract created successfully. Contract Address:', contractAddress);
         return res.json(`https://testnet.bscscan.com/address/${contractAddress}`);
     } catch (error) {
-        return res(error, 500);
         console.error('Error creating new Diplomas contract:', error);
+        return res(error, 500);
     }
 
     // Call the function to create a new Diplomas contract with your CID

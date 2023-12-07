@@ -1,6 +1,5 @@
 const db = require('../config/database');
 const router = require('./router');
-const {url, ipfsUrl} = require('../const/constants');
 const axios = require("axios");
 const {body, validationResult} = require("express-validator");
 const prefix = "diploma"
@@ -15,6 +14,7 @@ const diplomaAttributes = [
     "diploma_protocol_en",
     "diploma_protocol_ru",
     "diploma_protocol_kz",
+    "diploma_smart_contract_cid",
 ]
 router.get(
     `/${prefix}`,
