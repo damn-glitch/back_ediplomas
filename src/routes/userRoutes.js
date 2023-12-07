@@ -494,9 +494,7 @@ router.get(
 );
 
 router.get(
-    `/${prefix}/universities/get`,
-    authenticate,
-        async (req, res) => {
+    `/${prefix}/universities/get`, async (req, res) => {
         try {
             const users = await db.query(
                 `
