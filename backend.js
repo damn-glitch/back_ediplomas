@@ -1,5 +1,4 @@
 const express = require('express');
-// const bcrypt = require('bcryptjs');
 
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -25,10 +24,17 @@ const otpRoutes = require('./src/routes/otpRoutes');
 const validateIINRoutes = require('./src/routes/validateIINRoutes');
 const diplomaRoutes = require('./src/routes/diplomaRoutes');
 const db = require('./src/config/database');
-
 app.use(cors());
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
+
 app.use(bodyParser.json({limit: '10mb'}));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
+
+
 app.use('/', router);
 
 const fs = require('fs');
@@ -41,7 +47,7 @@ const caCert = fs.readFileSync('ca-certificate.crt');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const startServer = async () => {
     try {
-        db.connect(); // Initialize the database connection
+        await db.connect(); // Initialize the database connection
         console.log('Connected to the PostgreSQL database');
 
         await createRolesTable(db);
@@ -61,7 +67,7 @@ const startServer = async () => {
 
 const sendHttpRequest = async () => {
     try {
-        const response = await axios.get('https://agile-job-desc-denerator.onrender.com/reset', { withCredentials: true });
+        const response = await axios.get('https://agile-job-desc-denerator.onrender.com/reset', {withCredentials: true});
         console.log('HTTP request successful:', response.data);
     } catch (error) {
         console.error('Error sending HTTP request:', error.message);

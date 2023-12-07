@@ -14,11 +14,21 @@ const diplomaAttributes = [
     "diploma_protocol_en",
     "diploma_protocol_ru",
     "diploma_protocol_kz",
+
+    "diploma_iin",
+    "diploma_phone",
+    "diploma_email",
+    "diploma_gpa",
+    "diploma_region",
+    "diploma_gender",
+    "diploma_nationality",
+    "diploma_grant",
+    "diploma_faculty",
+    "diploma_diploma_total",
+
     "diploma_smart_contract_cid",
 ]
-router.get(
-    `/${prefix}`,
-    async (req, res) => {
+router.get(`/${prefix}`, async (req, res) => {
         try {
             // Extract page and per_page parameters from the request query
             const {page = 1, per_page = 25, university_id = null} = req.query;
@@ -77,7 +87,7 @@ router.get(`/${prefix}/:diploma_id`, async (req, res) => {
 });
 
 const getDiplomaFields = async (diploma_id) => {
-    const item = await db.query(`
+    const item = await db.query(` 
         SELECT *
         FROM diplomas
         WHERE id = $1
