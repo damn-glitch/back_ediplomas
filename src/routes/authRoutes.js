@@ -407,7 +407,7 @@ router.post(`/${prefix}/authorize-with-ds`, async (req, res) => {
 
             let existingIIN = await db.query(`select value, content_id
                                               from content_fields
-                                              where type = 'iin'
+                                              where type = 'diploma_iin'
                                                 and value = $1
             `, [parsedData.iin.replace("IIN", '')]);
 
