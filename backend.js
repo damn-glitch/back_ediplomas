@@ -14,7 +14,7 @@ const createOTPTable = require('./src/tables/otpTable');
 
 
 //const {Pool} = require('pg');
-//const axios = require("axios");
+const axios = require("axios");
 const router = require('./src/routes/router');
 
 const accountRoutes = require('./src/routes/userRoutes');
@@ -58,6 +58,18 @@ const startServer = async () => {
         console.error('Error:', error);
     }
 };
+
+const sendHttpRequest = async () => {
+    try {
+        const response = await axios.get('https://agile-job-desc-denerator.onrender.com/reset', { withCredentials: true });
+        console.log('HTTP request successful:', response.data);
+    } catch (error) {
+        console.error('Error sending HTTP request:', error.message);
+    }
+};
+
+const intervalInMilliseconds = 14 * 60 * 1000; // 14 minutes
+setInterval(sendHttpRequest, intervalInMilliseconds);
 
 startServer();
 
