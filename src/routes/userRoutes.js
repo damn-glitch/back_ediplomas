@@ -492,3 +492,30 @@ router.get(
         }
     }
 );
+
+router.get(
+    `/${prefix}/universities/get`,
+    authenticate,
+        async (req, res) => {
+        try {
+            const users = await db.query(
+                `
+                SELECT *
+                FROM users
+                WHERE role_id = 2
+                `
+            );
+            
+            for (let i = 0; i < users.rows.length; i++) {
+                let data = await getUserData(users.rows[i].id);
+                let temp = await getUniversityData(users.rows[i].id);
+                data = {...data, ...temp}
+                users.rows[i] = data;
+            }
+
+            return res.status(200).json(users.rows);
+        } catch (error) {
+            console.error("Error getting users:", error);
+            return res.status(500).send("Error getting users.");
+        }
+});

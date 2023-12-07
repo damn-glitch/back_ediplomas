@@ -1,1 +1,1 @@
-SELECT * FROM favorite_diplomas
+SELECT * FROM universities
