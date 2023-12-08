@@ -1,1 +1,1 @@
-SELECT * FROM universities
+SELECT * from users

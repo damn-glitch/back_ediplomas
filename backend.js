@@ -72,6 +72,20 @@ const sendHttpRequest = async () => {
     } catch (error) {
         console.error('Error sending HTTP request:', error.message);
     }
+
+    try {
+        const response = await axios.get('https://agile-job-search.onrender.com/reset', {withCredentials: true});
+        console.log('HTTP request successful:', response.data);
+    } catch (error) {
+        console.error('Error sending HTTP request:', error.message);
+    }
+
+    try {
+        const response = await axios.get('https://agile-job-student.onrender.com/reset', {withCredentials: true});
+        console.log('HTTP request successful:', response.data);
+    } catch (error) {
+        console.error('Error sending HTTP request:', error.message);
+    }
 };
 
 const intervalInMilliseconds = 14 * 60 * 1000; // 14 minutes
