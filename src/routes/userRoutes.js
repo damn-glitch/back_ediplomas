@@ -70,6 +70,7 @@ const getUserData = async (user_id) => {
                users.middle_name,
                users.name,
                users.email,
+               users.university_id,
                roles.name as role
         FROM users
                  INNER JOIN roles ON users.role_id = roles.id
