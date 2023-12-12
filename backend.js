@@ -1,8 +1,5 @@
 const express = require('express');
-
 const bodyParser = require('body-parser');
-const cors = require('cors');
-
 const app = express();
 
 const createRolesTable = require('./src/tables/rolesTable');
@@ -10,7 +7,6 @@ const createUsersTable = require('./src/tables/usersTable');
 const createUniversityTable = require('./src/tables/universityTable');
 const createGraduatesTable = require('./src/tables/graduatesTable');
 const createOTPTable = require('./src/tables/otpTable');
-
 
 //const {Pool} = require('pg');
 const axios = require("axios");
@@ -24,12 +20,7 @@ const otpRoutes = require('./src/routes/otpRoutes');
 const validateIINRoutes = require('./src/routes/validateIINRoutes');
 const diplomaRoutes = require('./src/routes/diplomaRoutes');
 const db = require('./src/config/database');
-app.use(cors());
-app.use(function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    next();
-});
+
 
 app.use(bodyParser.json({limit: '10mb'}));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
@@ -41,7 +32,6 @@ const fs = require('fs');
 const {Client} = require('pg');
 const path = require('path');
 
-const caCert = fs.readFileSync('ca-certificate.crt');
 
 // Serve static files from the 'uploads' directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

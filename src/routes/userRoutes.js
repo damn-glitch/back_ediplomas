@@ -164,9 +164,6 @@ router.post('/upload', upload.single('file'), (req, res) => {
     try {
 
         // // Access the uploaded file details from req.file
-        console.log("req.body.file", req.body.file);
-        console.log("req.body", req.body);
-        console.log("req.file", req.file);
         const {filename} = req.file;
         const filePath = "uploads/" + filename;
         // Return a response to the client with the relative path
@@ -242,12 +239,13 @@ router.post(`/${prefix}/profile`, [
     authenticate,
     async (req, res) => {
         const errors = validationResult(req);
-
+        console.log(errors)
         if (!errors.isEmpty()) {
             return res.status(400).json(errors);
         }
 
         const {attributes} = req.body;
+        console.log(attributes)
 
         const user = await db.query(`
             SELECT users.id,
@@ -267,6 +265,7 @@ router.post(`/${prefix}/profile`, [
         }
 
         try {
+            console.log(123);
             //update attributes
             let mergedAttributes = userAttributes;
             if (user.rows[0].role_id == 2) {
@@ -304,6 +303,7 @@ router.post(`/${prefix}/profile`, [
                 let temp = await getUniversityData(user.rows[0].id);
                 data = {...data, ...temp}
             }
+            console.log(321)
             return res.json(data);
         } catch (error) {
             console.error('Error updating user account:', error);
