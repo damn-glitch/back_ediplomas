@@ -87,7 +87,7 @@ router.get(`/${prefix}/:diploma_id`, async (req, res) => {
 });
 
 const getDiplomaFields = async (diploma_id) => {
-    const item = await db.query(` 
+    const item = await db.query(`
         SELECT *
         FROM diplomas
         WHERE id = $1
@@ -108,3 +108,4 @@ const getDiplomaFields = async (diploma_id) => {
     }
     return data;
 }
+

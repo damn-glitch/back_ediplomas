@@ -167,90 +167,107 @@ router.get(
         const query_dict = {
             name: name ?? '',
             gpa: gpaL && gpaR ? [parseFloat(gpaL), parseFloat(gpaR)] : null,
-            speciality: speciality ? speciality.split(',') : '',
-            region: region ? region.split(',') : '',
-            degree: degree ? degree.toLowerCase().split(',') : '',
-            year: year ? year.split(',') : '',
+            speciality: speciality,
+            region: region,
+            degree: degree,
+            year: year,
         };
-
+        let contentIds = [0];
+        let hasFields = false;
+        let hasColumns = false;
         try {
-            let searchResult;
-            let db_query =
-                `SELECT name_en
-                 FROM diplomas INNER JOIN universities ON diplomas.university_id = universities.id
-                 WHERE `;
-            const queryValues = [];
+            for (const [key, value] of Object.entries(query_dict)) {
+                if (!value) continue;
 
-            let has_filters = false;
-            let parameterIndex = 1;
+                let fieldsQuery = null;
+                console.log(key, value);
+                if (key === 'gpa' || key === 'region' || key === 'year') {
+                    console.log(123);
+                    hasFields = true;
+                }
+                switch (key) {
+                    case 'gpa' : {
+                        fieldsQuery = await db.query(`
+                            SELECT content_id
+                            FROM content_fields
+                            WHERE type = 'diploma_gpa'
+                              AND value > $1
+                              AND value < $2
+                        `, [value[0], value[1]]);
+                        break;
+                    }
+                    case 'region' : {
+                        fieldsQuery = await db.query(`
+                            SELECT content_id
+                            FROM content_fields
+                            WHERE type = 'diploma_region'
+                              AND value like $1
+                        `, [`%${value}%`]);
+                        break;
+                    }
+                    case 'year' : {
+                        fieldsQuery = await db.query(`
+                            SELECT content_id
+                            FROM content_fields
+                            WHERE type = 'diploma_year'
+                              AND value = $1
+                        `, [value]);
+                        break;
+                    }
+                }
+                if (fieldsQuery && fieldsQuery.rows && fieldsQuery.rows.length) {
+
+                    let ids = fieldsQuery.rows.map(row => parseInt(row.content_id))
+
+                    if (contentIds.includes(0)) {
+                        contentIds = ids;
+                    } else {
+                        contentIds = ids.filter(value => contentIds.includes(value))
+                    }
+
+                }
+            }
+
+            let query = `select name_en
+                         from diplomas
+                         where`;
 
             for (const [key, value] of Object.entries(query_dict)) {
-                if (value === null || value === '') {
-                    continue;
+                if (!value) continue;
+
+                if (key === 'name' || key === 'speciality' || key === 'degree') {
+                    hasColumns = true;
                 }
-                has_filters = true;
-                console.log(value);
+
                 switch (key) {
-                    case 'name':
-                        db_query += `name_kz LIKE $${parameterIndex++} AND `;
-                        queryValues.push(`%${value}%`);
+                    case 'name' :
+                        query += `(name_en ilike '%${value}%' or name_ru ilike '%${value}%' or name_kz ilike '%${value}%') AND`;
                         break;
-                    case 'gpa':
-                        db_query += `gpa > $${parameterIndex++} AND gpa < $${parameterIndex++} AND `;
-                        queryValues.push(value[0]);
-                        queryValues.push(value[1]);
-                        break;
+
                     case 'speciality':
-                        if (Array.isArray(value)) {
-                            db_query += `(${value.map(() => `${key} LIKE $${parameterIndex++}`).join(' OR ')}) AND `;
-                            queryValues.push(...value.map((v) => `%${v}%`));
-                        } else {
-                            db_query += `${key} LIKE $${parameterIndex++} AND `;
-                            queryValues.push(`%${value}%`);
-                        }
-                        console.log(queryValues);
-                        break;
-                    case 'region':
-                        if (Array.isArray(value)) {
-                            db_query += `(${value.map(() => `${key} LIKE $${parameterIndex++}`).join(' OR ')}) AND `;
-                            queryValues.push(...value.map((v) => `%${v}%`));
-                        } else {
-                            db_query += `${key} LIKE $${parameterIndex++} AND `;
-                            queryValues.push(`%${value}%`);
-                        }
-                        break;
                     case 'degree':
-                        if (Array.isArray(value)) {
-                            db_query += `(${value.map(() => `major LIKE $${parameterIndex++}`).join(' OR ')}) AND `;
-                            queryValues.push(...value.map((v) => `%${v}%`));
-                        } else {
-                            db_query += `${key} LIKE $${parameterIndex++} AND `;
-                            queryValues.push(`%${value}%`);
-                        }
-                        break;
-                    case 'year':
-                        if (Array.isArray(value)) {
-                            db_query += `(${value.map(() => `${key} = $${parameterIndex++}`).join(' OR ')}) AND `;
-                            queryValues.push(...value);
-                        } else {
-                            db_query += `${key} = $${parameterIndex++} AND `;
-                            queryValues.push(value);
-                        }
-                        break;
+                        query += `(speciality_en ilike '%${value}%' or speciality_ru ilike '%${value}%' or speciality_kz ilike '%${value}%') AND`;
                 }
             }
 
-            if (!has_filters) {
-                return res.status(400).send('Bad Request');
+            let names = [];
+            let diplomas = [];
+
+            if (hasFields) {
+                diplomas = await db.query(`${query} id = ANY ($1)`, [contentIds]);
+            } else if (hasColumns) {
+                query = query.substring(0, query.length - 3);
+                diplomas = await db.query(query);
             }
 
-            db_query = db_query.substring(0, db_query.length - 5);
-            searchResult = await db.query(db_query, queryValues);
-            return res.send(searchResult.rows);
+            if ((hasColumns || hasFields) && diplomas.rows.length) {
+                names = diplomas.rows;
+            }
+
+            return res.json(names);
         } catch (error) {
             console.error('Error searching graduates:', error);
             return res.status(500).send('Error searching graduates.');
         }
-        return res.send([]);
     }
 );

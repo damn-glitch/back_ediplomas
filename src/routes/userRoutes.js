@@ -29,7 +29,6 @@ const userAttributes = [
     "middle_name",
     "email",
     'avatar',
-    'university_id',
     'phone',
     'name',
     'iin',
@@ -90,6 +89,7 @@ const getUserData = async (user_id) => {
         );
         data[key] = attr.rows.length ? attr.rows[0].value : null;
     }
+
     return data;
 }
 const getDiplomaData = async (user_id) => {
@@ -499,12 +499,12 @@ router.get(
         try {
             const users = await db.query(
                 `
-                SELECT *
-                FROM users
-                WHERE role_id = 2
+                    SELECT *
+                    FROM users
+                    WHERE role_id = 2
                 `
             );
-            
+
             for (let i = 0; i < users.rows.length; i++) {
                 let data = await getUserData(users.rows[i].id);
                 let temp = await getUniversityData(users.rows[i].id);
@@ -517,4 +517,4 @@ router.get(
             console.error("Error getting users:", error);
             return res.status(500).send("Error getting users.");
         }
-});
+    });
