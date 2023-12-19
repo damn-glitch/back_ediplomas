@@ -1,1 +1,1 @@
-select * from content_fields where content_id = 124;
+SELECT * from users;
