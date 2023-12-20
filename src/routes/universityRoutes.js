@@ -24,6 +24,13 @@ const universityAttributes = [
     'notification_accept_device',
     'social_links',
     "certificates",
+    "web_link",
+    "instagram_link",
+    "telegram_link",
+    "resume_link",
+    "linkedin_link",
+    "youtube_link",
+    "facebook_link",
 ];
 //old /account
 router.get(`/${prefix}`, authenticate, async (req, res) => {

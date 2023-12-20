@@ -20,6 +20,13 @@ const universityAttributes = [
     'notification_accept_device',
     'social_links',
     "certificates",
+    "web_link",
+    "instagram_link",
+    "telegram_link",
+    "resume_link",
+    "linkedin_link",
+    "youtube_link",
+    "facebook_link",
 ];
 
 const getUniversityData = async (university_id) => {

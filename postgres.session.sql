@@ -1,1 +1,1 @@
-SELECT * from users;
+SELECT * from content_fields;

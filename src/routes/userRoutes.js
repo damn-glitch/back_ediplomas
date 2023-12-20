@@ -59,6 +59,12 @@ const universityAttributes = [
     'smart_contract_links',
     'average_gpa',
     'banner',
+    "instagram_link",
+    "telegram_link",
+    "resume_link",
+    "linkedin_link",
+    "youtube_link",
+    "facebook_link",
 ];
 
 const getUserData = async (user_id) => {
