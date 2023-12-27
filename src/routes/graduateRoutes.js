@@ -149,6 +149,12 @@ router.get(
             .withMessage('Years must be an array.')
             .isInt()
             .withMessage('Each year must be an integer.'),
+        body('university_id')
+            .optional()
+            .isArray()
+            .withMessage('University_id must be an array.')
+            .isInt()
+            .withMessage('Each id must be an integer.'),
     ],
     async (req, res) => {
         const errors = validationResult(req);
@@ -163,6 +169,7 @@ router.get(
         const region = req.query.region;
         const degree = req.query.degree;
         const year = req.query.year;
+        const university_id = req.query.university_id;
 
         const query_dict = {
             name: name ?? '',
@@ -171,6 +178,7 @@ router.get(
             region: region,
             degree: degree,
             year: year,
+            university_id: university_id,
         };
         let contentIds = [0];
         let hasFields = false;
@@ -235,7 +243,7 @@ router.get(
             for (const [key, value] of Object.entries(query_dict)) {
                 if (!value) continue;
 
-                if (key === 'name' || key === 'speciality' || key === 'degree') {
+                if (key === 'name' || key === 'speciality' || key === 'degree' || key === 'university_id') {
                     hasColumns = true;
                 }
 
@@ -247,6 +255,9 @@ router.get(
                     case 'speciality':
                     case 'degree':
                         query += `(speciality_en ilike '%${value}%' or speciality_ru ilike '%${value}%' or speciality_kz ilike '%${value}%') AND`;
+                    case 'university_id':
+                        query += `(university_id = ${value}) AND`;
+                        break;
                 }
             }
 

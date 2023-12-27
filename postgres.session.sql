@@ -1,1 +1,1 @@
-SELECT * from content_fields;
+SELECT * FROM diplomas;

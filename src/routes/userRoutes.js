@@ -65,6 +65,7 @@ const universityAttributes = [
     "linkedin_link",
     "youtube_link",
     "facebook_link",
+    "speciality_amount",
 ];
 
 const getUserData = async (user_id) => {
