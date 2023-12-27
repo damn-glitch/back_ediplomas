@@ -12,7 +12,7 @@ async function createOTPTable(db) {
         )
         `)
 
-        console.log('OTP table created or already exists');
+        // console.log('OTP table created or already exists');
     }
     catch (error) {
         console.error('Error creating OTP table:', error);

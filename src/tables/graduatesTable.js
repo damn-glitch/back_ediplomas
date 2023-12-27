@@ -23,7 +23,7 @@ async function createGraduatesTable(db) {
             CONSTRAINT fk_university_id FOREIGN KEY (university_id) REFERENCES universities(id)
         )
         `)
-    console.log('Graduates table created or already exists');
+    // console.log('Graduates table created or already exists');
 }
 catch (error) {
     console.error('Error creating graduates table:', error);

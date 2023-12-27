@@ -2,7 +2,7 @@
 
 async function createRolesTable(db) {
     try {
-        console.log("createRolesTable here");
+        // console.log("createRolesTable here");
         await db.query(`
             CREATE TABLE IF NOT EXISTS roles
             (
@@ -10,7 +10,7 @@ async function createRolesTable(db) {
                 name TEXT
             );
         `)
-        console.log('Roles table created or already exists');
+        // console.log('Roles table created or already exists');
 
         const roles = await db.query(`SELECT * FROM roles`);
         if (roles.rows.length === 0) {
@@ -23,7 +23,7 @@ async function createRolesTable(db) {
             `);
         }
 
-        console.log('Roles table initialized successfully');
+        // console.log('Roles table initialized successfully');
     } catch (error) {
         console.error('Error initializing roles table:', error);
     }

@@ -18,7 +18,7 @@ async function createUsersTable(db) {
                 CONSTRAINT fk_user_role FOREIGN KEY (role_id) REFERENCES roles(id)
             );
         `)
-        console.log('Users table created or already exists');
+        // console.log('Users table created or already exists');
         }
         catch (error) {
             console.error('Error creating users table:', error);

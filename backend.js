@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
+const cors = require('cors');
+app.use(cors());
 
 const createRolesTable = require('./src/tables/rolesTable');
 const createUsersTable = require('./src/tables/usersTable');
@@ -28,18 +30,16 @@ app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
 
 
 app.use('/', router);
-
 const fs = require('fs');
 const {Client} = require('pg');
 const path = require('path');
-
 
 // Serve static files from the 'uploads' directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const startServer = async () => {
     try {
         await db.connect(); // Initialize the database connection
-        console.log('Connected to the PostgreSQL database');
+        // console.log('Connected to the PostgreSQL database');
 
         await createRolesTable(db);
         await createUsersTable(db);
@@ -48,8 +48,30 @@ const startServer = async () => {
         await createOTPTable(db);
 
         const port = 8080; // Start the server
+        const halfHourAgo = new Date(Date.now());
+        // halfHourAgo.setMinutes(halfHourAgo.getMinutes() - 5);
+        // Get the current date and time in UTC
+        const currentDateUTC = new Date();
+
+        // Create a formatter with the desired timezone ('Asia/Dhaka')
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Dhaka', // Set your desired timezone here, e.g., 'Asia/Dhaka' for GMT+6
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+        });
+
+        // Format the date according to the specified timezone
+        const formattedDate = formatter.format(currentDateUTC);
+
+        console.log(formattedDate);
+
         app.listen(port, () => {
-            console.log(`Server is running on port ${port}`);
+            console.log(`Server is running on port ${port}`, formattedDate);
         });
     } catch (error) {
         console.error('Error:', error);

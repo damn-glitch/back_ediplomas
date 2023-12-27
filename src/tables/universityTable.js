@@ -20,7 +20,7 @@ async function createUniversityTable(db) {
                 number_of_best_students INT
             );
         `)
-        console.log('Universities table created or already exists');
+        // console.log('Universities table created or already exists');
         }
         catch (error) {
             console.error('Error creating universities table:', error);
