@@ -20,7 +20,7 @@ router.post(`/${prefix}/generate`, async (req, res) => {
     console.log(2);
 
     // Function to create a new Diplomas contract
-    let diplomaBaseURI = `https://${CID}.ipfs.nftstorage.link/`;
+    let diplomaBaseURI = `ipfs://${CID}/`;
     console.log(3);
 
     // let diplomaBaseURI = `ipfs://${CID}/`;
