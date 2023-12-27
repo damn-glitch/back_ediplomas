@@ -190,7 +190,6 @@ router.get(
                 let fieldsQuery = null;
                 console.log(key, value);
                 if (key === 'gpa' || key === 'region' || key === 'year') {
-                    console.log(123);
                     hasFields = true;
                 }
                 switch (key) {
@@ -251,10 +250,11 @@ router.get(
                     case 'name' :
                         query += `(name_en ilike '%${value}%' or name_ru ilike '%${value}%' or name_kz ilike '%${value}%') AND`;
                         break;
-
+ 
                     case 'speciality':
                     case 'degree':
                         query += `(speciality_en ilike '%${value}%' or speciality_ru ilike '%${value}%' or speciality_kz ilike '%${value}%') AND`;
+                        break;
                     case 'university_id':
                         query += `(university_id = ${value}) AND`;
                         break;

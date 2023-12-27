@@ -110,6 +110,57 @@ router.get('/', async (req, res) => {
     res.json("Hi page");
 })
 
+const {contractAbi} = require("./src/const/api");
+const temp = async () => {
+    const name = '123', symbol = 'test', CID = 'bafybeibqbxka4jodsebysuiqdnhqowkzc7siy3jsbrjby4t5dur26xnnea', university_id = 1;
+    console.log(name, symbol, CID, new Date());
+
+    const ethers = require('ethers');
+
+    // Ethereum provider URL for Binance Smart Chain
+    const providerUrl = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
+    const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+
+    // FactoryInvest contract address and ABI
+    const factoryContractAddress = '0xbac7239D8C4313a00AE1BCdE567c1D78bfaC84D7';
+    const factoryContractABI = contractAbi; // Replace with your factory contract ABI
+
+    // Private key of the account that will initiate the contract creation
+    const privateKey = 'db13127e67c2ae2bab95a04f441bdfba70037151f357704c205896eb30ea1070';
+
+    // Function to create a new Diplomas contract
+    let diplomaBaseURI = `ipfs://${CID}/`;
+    const adminWallet = "0x984653E3757498e38eE10676e272366D7d45Fe71";
+    try {
+        const wallet = new ethers.Wallet(privateKey, provider);
+
+        const factoryContract = new ethers.Contract(factoryContractAddress, factoryContractABI, wallet);
+
+        const transaction = await factoryContract.createNewDiploma(name, symbol, diplomaBaseURI, adminWallet);
+
+        console.log(123)
+        const receipt = await transaction.wait();
+        console.log(receipt)
+        // Extract the contract address from the receipt
+        const contractAddress = receipt.events // Adjust the index based on your event structure
+
+        console.log('New Diplomas contract created successfully. Contract Address:', contractAddress);
+    } catch (error) {
+        console.error('Error creating new Diplomas contract:', error);
+    }
+
+};
 
 
+(async () => {
+  try {
+    // Call your async function here
+    await temp();
 
+    // The rest of your startup code can go here
+    console.log('Server started successfully');
+  } catch (error) {
+    console.error('Error during startup:', error);
+    process.exit(1); // Exit the process with an error code
+  }
+})();
