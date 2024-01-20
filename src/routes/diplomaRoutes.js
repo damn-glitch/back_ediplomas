@@ -37,6 +37,7 @@ router.get(`/${prefix}`, async (req, res) => {
             const pageNumber = page;
             const perPageNumber = per_page;
 
+
             // Validate that page and per_page are positive integers
             if (isNaN(pageNumber) || isNaN(perPageNumber) || pageNumber <= 0 || perPageNumber <= 0) {
                 return res.status(400).json({error: 'Invalid page or per_page parameter.'});
@@ -54,6 +55,20 @@ router.get(`/${prefix}`, async (req, res) => {
                 [perPageNumber, offset,]);
 
             // Return the fetched diplomas
+            if (perPageNumber > 8){
+                return res.json(diplomaItems.rows);
+            }
+
+            for (let i = 0; i < diplomaItems.rows.length; i++) {
+                const diplomaId = diplomaItems.rows[i].id;
+                const gpaResult = await db.query(
+                    'SELECT value FROM content_fields WHERE content_id = $1 AND type = $2',
+                    [diplomaId, 'diploma_gpa']
+                );
+                const gpa = gpaResult.rows.length ? gpaResult.rows[0].value : null;
+                diplomaItems.rows[i]["gpa"] = gpa;
+            }
+
             return res.json(diplomaItems.rows);
         } catch (error) {
             console.error('Error sending OTP:', error);
