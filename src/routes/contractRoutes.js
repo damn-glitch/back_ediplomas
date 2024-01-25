@@ -8,7 +8,7 @@ router.post(`/${prefix}/generate`, async (req, res) => {
     const ethers = require('ethers');
 
     // Ethereum provider URL for Binance Smart Chain
-    const providerUrl = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
+    const providerUrl = 'https://dimensional-dimensional-pond.bsc-testnet.quiknode.pro/fef4b7cdf6e13ad3fbc9511535148de95567039e/';
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
     // FactoryInvest contract address and ABI

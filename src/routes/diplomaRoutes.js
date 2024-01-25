@@ -82,7 +82,7 @@ router.get(`/${prefix}/:diploma_id`, async (req, res) => {
         return res.json(diploma);
     } catch (error) {
         console.error('Error sending OTP:', error);
-        return res.status(500).json({error: 'Failed to send OTP.'});
+        return res.status(500).json({error: error});
     }
 });
 
@@ -97,6 +97,28 @@ const getDiplomaFields = async (diploma_id) => {
         return [];
     }
     let data = item.rows[0];
+
+    const createdDate = new Date(item.rows[0].created_at);
+    const formattedCreatedDate = `${padZero(createdDate.getUTCHours())}:${padZero(createdDate.getUTCMinutes())} - ${padZero(createdDate.getUTCDate())}.${padZero(createdDate.getUTCMonth() + 1)}.${createdDate.getUTCFullYear()}`;
+
+    data['created_at'] = formattedCreatedDate;
+    if (item.rows[0].university_id) {
+        const xmls = await db.query(`
+            select signed_xmls.signed_by, signed_xmls.created_at
+            from signed_xmls
+                     inner join users
+                                on users.id = signed_xmls.user_id
+            where users.university_id = $1`, [item.rows[0].university_id]);
+        if (xmls.rows.length) {
+            data['signed_by'] = xmls.rows[0].signed_by;
+
+            const dateObject = new Date(xmls.rows[0].created_at);
+
+            const formattedDate = `${padZero(dateObject.getUTCHours())}:${padZero(dateObject.getUTCMinutes())} - ${padZero(dateObject.getUTCDate())}.${padZero(dateObject.getUTCMonth() + 1)}.${dateObject.getUTCFullYear()}`;
+            data['signed_at'] = formattedDate;
+        }
+    }
+
     for (let i = 0; i < diplomaAttributes.length; i++) {
         const key = diplomaAttributes[i];
         if (item.rows[0][key] !== undefined) continue;
@@ -109,3 +131,6 @@ const getDiplomaFields = async (diploma_id) => {
     return data;
 }
 
+function padZero(value) {
+    return value < 10 ? `0${value}` : value;
+}

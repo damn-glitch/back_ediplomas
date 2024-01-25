@@ -350,7 +350,7 @@ router.post(`/${prefix}/sign-xml-with-ds`, [body('xml')
         if (!errors.isEmpty()) {
             return res.status(400).json(errors);
         }
-        const {xml} = req.body;
+        const {xml, signed_by} = req.body;
 
         try {
             const user = await db.query(`
@@ -361,8 +361,8 @@ router.post(`/${prefix}/sign-xml-with-ds`, [body('xml')
             `, [req.user.id]);
 
             if (user.rows.length > 0) {
-                db.query(`INSERT INTO signed_xmls(user_id, value)
-                          values ($1, $2)`, [req.user.id, xml,])
+                db.query(`INSERT INTO signed_xmls(user_id, value, signed_by)
+                          values ($1, $2, $3)`, [req.user.id, xml, signed_by,])
                 return res.json("success");
             } else {
                 return res.status(404).send('User not found.');
