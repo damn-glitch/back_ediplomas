@@ -525,3 +525,48 @@ router.get(
             return res.status(500).send("Error getting users.");
         }
     });
+
+router.put(
+    `/${prefix}/visibility`, 
+    authenticate,
+    async (req, res) => {
+        console.log('hello visible');
+        console.log(req.body.visibility);
+        try {
+            const user = await db.query(`
+                SELECT users.id, role_id
+                FROM users
+                        INNER JOIN roles ON users.role_id = roles.id
+                WHERE users.id = $1
+            `, [req.user.id]);
+
+            console.log(user.rows);
+
+            if (user.rows.length > 0) {
+                let role = user.rows[0].role_id;
+
+                if (role == 3) {
+                    console.log('user is student');
+                    const query = `UPDATE diplomas SET visibility = $1 WHERE id = $2 RETURNING *`;
+                    const result = await db.query(query, [req.body.visibility, user.rows[0].id]);
+                    console.log(result.rows);
+
+                    if (result.rows.length > 0) {
+                        return res.status(200).send({message: 'User updated successfully.'});
+                    } else {
+                        return res.status(404).send('User not found.');
+                    }
+
+                } else {
+                    return res.status(404).send('User not found.');
+                }
+            } else {
+                return res.status(404).send('User not found.');
+            }
+
+        } catch(error) {
+            console.error("Error updating user visibility:", error);
+            return res.status(500).send("Error updating user visibility.");
+        }
+    }
+)
