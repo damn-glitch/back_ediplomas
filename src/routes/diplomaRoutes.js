@@ -37,6 +37,7 @@ router.get(`/${prefix}`, async (req, res) => {
             const pageNumber = page;
             const perPageNumber = per_page;
 
+
             // Validate that page and per_page are positive integers
             if (isNaN(pageNumber) || isNaN(perPageNumber) || pageNumber <= 0 || perPageNumber <= 0) {
                 return res.status(400).json({error: 'Invalid page or per_page parameter.'});
@@ -47,13 +48,28 @@ router.get(`/${prefix}`, async (req, res) => {
 
             // Fetch diplomas from the database based on the offset and limit
             const diplomaItems = await db.query(`
-                        SELECT *
-                        FROM diplomas ${university_id ? `WHERE university_id = ${university_id}` : ""}
-                        ORDER BY id DESC
-                        LIMIT $1 OFFSET $2`,
-                [perPageNumber, offset,]);
+                SELECT *
+                FROM diplomas
+                ${university_id ? `WHERE university_id = ${university_id} AND visibility = true` : "WHERE visibility = true"}
+                ORDER BY id DESC
+                LIMIT $1 OFFSET $2`,
+                [perPageNumber, offset]);
 
             // Return the fetched diplomas
+            if (perPageNumber > 8){
+                return res.json(diplomaItems.rows);
+            }
+
+            for (let i = 0; i < diplomaItems.rows.length; i++) {
+                const diplomaId = diplomaItems.rows[i].id;
+                const gpaResult = await db.query(
+                    'SELECT value FROM content_fields WHERE content_id = $1 AND type = $2',
+                    [diplomaId, 'diploma_gpa']
+                );
+                const gpa = gpaResult.rows.length ? gpaResult.rows[0].value : null;
+                diplomaItems.rows[i]["gpa"] = gpa;
+            }
+
             return res.json(diplomaItems.rows);
         } catch (error) {
             console.error('Error sending OTP:', error);
@@ -71,7 +87,7 @@ router.get(`/${prefix}/:diploma_id`, async (req, res) => {
         const diplomaItem = await db.query(`
             SELECT id
             FROM diplomas
-            WHERE id = $1
+            WHERE id = $1 AND visibility = true
         `, [diploma_id]);
         if (diplomaItem.rows.length === 0) {
             return res.status(404).json({"error": "Diploma not found"});
@@ -90,7 +106,7 @@ const getDiplomaFields = async (diploma_id) => {
     const item = await db.query(`
         SELECT *
         FROM diplomas
-        WHERE id = $1
+        WHERE id = $1 AND visibility = true
     `, [diploma_id]);
 
     if (!item.rows.length) {

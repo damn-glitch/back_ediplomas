@@ -170,6 +170,8 @@ router.get(
         const degree = req.query.degree;
         const year = req.query.year;
         const university_id = req.query.university_id;
+        const ratingL = req.query.ratingL;
+        const ratingR = req.query.ratingR;
 
         const query_dict = {
             name: name ?? '',
@@ -179,6 +181,7 @@ router.get(
             degree: degree,
             year: year,
             university_id: university_id,
+            rating: ratingL && ratingR ? [parseFloat(ratingL), parseFloat(ratingR)] : null,
         };
         let contentIds = [0];
         let hasFields = false;
@@ -258,6 +261,9 @@ router.get(
                     case 'university_id':
                         query += `(university_id = ${value}) AND`;
                         break;
+                    case 'rating':
+                        query += `(rating > ${value[0]} AND rating < ${value[1]}) AND`;
+                        break;
                 }
             }
 
@@ -265,10 +271,9 @@ router.get(
             let diplomas = [];
 
             if (hasFields) {
-                diplomas = await db.query(`${query} id = ANY ($1)`, [contentIds]);
+                diplomas = await db.query(`${query} (visibility = true) AND id = ANY ($1)`, [contentIds]);
             } else if (hasColumns) {
-                query = query.substring(0, query.length - 3);
-                diplomas = await db.query(query);
+                diplomas = await db.query(`${query} visibility = true`);
             }
 
             if ((hasColumns || hasFields) && diplomas.rows.length) {
