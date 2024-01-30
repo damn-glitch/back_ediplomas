@@ -245,7 +245,7 @@ router.get(
             for (const [key, value] of Object.entries(query_dict)) {
                 if (!value) continue;
 
-                if (key === 'name' || key === 'speciality' || key === 'degree' || key === 'university_id') {
+                if (key === 'name' || key === 'speciality' || key === 'degree' || key === 'university_id' || key === 'rating') {
                     hasColumns = true;
                 }
 
