@@ -48,6 +48,28 @@ const userAttributes = [
     "vacancy_amount",
     "branches_amount",
     "position",
+    //
+    "skills",
+    "desired_position",
+    "desired_salary_amount",
+    "desired_schedule",
+    "gender",
+    "telegram",
+    "address",
+    "description",
+    "major",
+    "university_name",
+    "specialization",
+    "year",
+    "company_name",
+    "experience_start",
+    "experience_end",
+    "desired_job_position",
+    "responsibility",
+    "certificates",
+    "program",
+    "publish_year",
+
 ];
 const universityAttributes = [
     'gallery',
@@ -96,6 +118,13 @@ const getUserData = async (user_id) => {
         );
         data[key] = attr.rows.length ? attr.rows[0].value : null;
     }
+    const university = await db.query(`
+        select *
+        from universities
+        where id = $1`, [user.rows[0].university_id]);
+    if (university.rows.length) {
+        data['university_name'] = university.rows[0].name;
+    } 
 
     return data;
 }
@@ -527,7 +556,7 @@ router.get(
     });
 
 router.put(
-    `/${prefix}/visibility`, 
+    `/${prefix}/visibility`,
     authenticate,
     async (req, res) => {
         console.log('hello visible');
@@ -536,7 +565,7 @@ router.put(
             const user = await db.query(`
                 SELECT users.id, role_id
                 FROM users
-                        INNER JOIN roles ON users.role_id = roles.id
+                         INNER JOIN roles ON users.role_id = roles.id
                 WHERE users.id = $1
             `, [req.user.id]);
 
@@ -547,7 +576,9 @@ router.put(
 
                 if (role == 3) {
                     console.log('user is student');
-                    const query = `UPDATE diplomas SET visibility = $1 WHERE id = $2 RETURNING *`;
+                    const query = `UPDATE diplomas
+                                   SET visibility = $1
+                                   WHERE id = $2 RETURNING *`;
                     const result = await db.query(query, [req.body.visibility, user.rows[0].id]);
                     console.log(result.rows);
 
@@ -564,7 +595,7 @@ router.put(
                 return res.status(404).send('User not found.');
             }
 
-        } catch(error) {
+        } catch (error) {
             console.error("Error updating user visibility:", error);
             return res.status(500).send("Error updating user visibility.");
         }

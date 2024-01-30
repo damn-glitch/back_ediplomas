@@ -122,14 +122,12 @@ const getDiplomaFields = async (diploma_id) => {
         const xmls = await db.query(`
             select signed_xmls.signed_by, signed_xmls.created_at
             from signed_xmls
-                     inner join users
-                                on users.id = signed_xmls.user_id
+            inner join users
+            on users.id = signed_xmls.user_id
             where users.university_id = $1`, [item.rows[0].university_id]);
         if (xmls.rows.length) {
             data['signed_by'] = xmls.rows[0].signed_by;
-
             const dateObject = new Date(xmls.rows[0].created_at);
-
             const formattedDate = `${padZero(dateObject.getUTCHours())}:${padZero(dateObject.getUTCMinutes())} - ${padZero(dateObject.getUTCDate())}.${padZero(dateObject.getUTCMonth() + 1)}.${dateObject.getUTCFullYear()}`;
             data['signed_at'] = formattedDate;
         }
