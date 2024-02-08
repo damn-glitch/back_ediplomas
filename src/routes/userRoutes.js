@@ -71,6 +71,11 @@ const userAttributes = [
     "publish_year",
 
 ];
+
+const employerAttributes = [
+    'avatar',
+];
+
 const universityAttributes = [
     'gallery',
     "student_amount",
@@ -128,6 +133,39 @@ const getUserData = async (user_id) => {
 
     return data;
 }
+
+const getEmployerData = async (user_id) => {
+    const user = await db.query(`
+        SELECT users.id,
+               users.first_name,
+               users.last_name,
+               users.middle_name,
+               users.name,
+               users.email,
+               users.university_id,
+               roles.name as role
+        FROM users
+                 INNER JOIN roles ON users.role_id = roles.id
+        WHERE users.id = $1
+    `, [user_id]);
+
+    if (!user.rows.length) {
+        return [];
+    }
+    let data = user.rows[0];
+    for (let i = 0; i < employerAttributes.length; i++) {
+        const key = employerAttributes[i];
+        if (user.rows[0][key] !== undefined) continue;
+        let attr = await db.query(
+            'select * from content_fields where content_id = $1 and type = $2',
+            [user_id, key]
+        );
+        data[key] = attr.rows.length ? attr.rows[0].value : null;
+    }
+
+    return data;
+};
+
 const getDiplomaData = async (user_id) => {
     const diploma = await db.query(`
         SELECT *
@@ -601,3 +639,27 @@ router.put(
         }
     }
 )
+
+router.get(
+    `/${prefix}/employers/get`, async (req, res) => {
+        try {
+            const users = await db.query(
+                `
+                    SELECT *
+                    FROM users
+                    WHERE role_id = 1
+                `
+            );
+
+            for (let i = 0; i < users.rows.length; i++) {
+                let data = await getEmployerData(users.rows[i].id);
+                // let temp = await getUniversityData(users.rows[i].id);
+                users.rows[i] = data;
+            }
+
+            return res.status(200).json(users.rows);
+        } catch (error) {
+            console.error("Error getting users:", error);
+            return res.status(500).send("Error getting users.");
+        }
+    });
