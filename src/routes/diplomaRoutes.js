@@ -27,6 +27,13 @@ const diplomaAttributes = [
     "diploma_diploma_total",
 
     "diploma_smart_contract_cid",
+
+    "faculty",
+    "subjectsHigher",
+    "subjectsStandard",
+    "additionalSubjects",
+    "grade",
+    "verified",
 ]
 router.get(`/${prefix}`, async (req, res) => {
         try {
@@ -48,15 +55,14 @@ router.get(`/${prefix}`, async (req, res) => {
 
             // Fetch diplomas from the database based on the offset and limit
             const diplomaItems = await db.query(`
-                SELECT *
-                FROM diplomas
-                ${university_id ? `WHERE university_id = ${university_id} AND visibility = true` : "WHERE visibility = true"}
-                ORDER BY id DESC
-                LIMIT $1 OFFSET $2`,
+                        SELECT *
+                        FROM diplomas ${university_id ? `WHERE university_id = ${university_id} AND visibility = true` : "WHERE visibility = true"}
+                        ORDER BY id DESC
+                        LIMIT $1 OFFSET $2`,
                 [perPageNumber, offset]);
 
             // Return the fetched diplomas
-            if (perPageNumber > 8){
+            if (perPageNumber > 8) {
                 return res.json(diplomaItems.rows);
             }
 
@@ -87,7 +93,8 @@ router.get(`/${prefix}/:diploma_id`, async (req, res) => {
         const diplomaItem = await db.query(`
             SELECT id
             FROM diplomas
-            WHERE id = $1 AND visibility = true
+            WHERE id = $1
+              AND visibility = true
         `, [diploma_id]);
         if (diplomaItem.rows.length === 0) {
             return res.status(404).json({"error": "Diploma not found"});
@@ -106,7 +113,8 @@ const getDiplomaFields = async (diploma_id) => {
     const item = await db.query(`
         SELECT *
         FROM diplomas
-        WHERE id = $1 AND visibility = true
+        WHERE id = $1
+          AND visibility = true
     `, [diploma_id]);
 
     if (!item.rows.length) {
@@ -122,8 +130,8 @@ const getDiplomaFields = async (diploma_id) => {
         const xmls = await db.query(`
             select signed_xmls.signed_by, signed_xmls.created_at
             from signed_xmls
-            inner join users
-            on users.id = signed_xmls.user_id
+                     inner join users
+                                on users.id = signed_xmls.user_id
             where users.university_id = $1`, [item.rows[0].university_id]);
         if (xmls.rows.length) {
             data['signed_by'] = xmls.rows[0].signed_by;

@@ -20,6 +20,12 @@ const diplomaAttributes = [
     "diploma_protocol_en",
     "diploma_protocol_ru",
     "diploma_protocol_kz",
+    "faculty",
+    "subjectsHigher",
+    "subjectsStandard",
+    "additionalSubjects",
+    "grade",
+    "verified",
 ]
 
 const prefix = "users";
@@ -63,14 +69,16 @@ const userAttributes = [
     "year",
     "company_name",
     "experience_start",
+    "experience_still_working",
     "experience_end",
     "desired_job_position",
     "responsibility",
     "certificates",
     "program",
     "publish_year",
-
+    'gallery',
 ];
+
 const universityAttributes = [
     'gallery',
     "student_amount",
@@ -124,7 +132,7 @@ const getUserData = async (user_id) => {
         where id = $1`, [user.rows[0].university_id]);
     if (university.rows.length) {
         data['university_name'] = university.rows[0].name;
-    } 
+    }
 
     return data;
 }
@@ -301,7 +309,6 @@ router.post(`/${prefix}/profile`, [
         }
 
         try {
-            console.log(123);
             //update attributes
             let mergedAttributes = userAttributes;
             if (user.rows[0].role_id == 2) {
@@ -309,14 +316,14 @@ router.post(`/${prefix}/profile`, [
             }
             for (let i = 0; i < mergedAttributes.length; i++) {
                 const key = mergedAttributes[i];
-                if (user.rows[0][key] !== undefined && attributes[key]) {
+                if (user.rows[0][key] !== undefined && Object.keys(attributes).includes(key)) {
                     await db.query(
                         `update users
                          set ${key} = $1
                          where id = $2`,
                         [attributes[key], req.user.id,]
                     );
-                } else if (attributes[key]) {
+                } else if (Object.keys(attributes).includes(key)) {
                     let attr = await db.query(
                         'select * from content_fields where content_id = $1 and type = $2',
                         [req.user.id, key]
