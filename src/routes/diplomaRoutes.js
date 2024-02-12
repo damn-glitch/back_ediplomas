@@ -57,7 +57,7 @@ router.get(`/${prefix}`, async (req, res) => {
             const diplomaItems = await db.query(`
                         SELECT *
                         FROM diplomas ${university_id ? `WHERE university_id = ${university_id} AND visibility = true` : "WHERE visibility = true"}
-                        ORDER BY id DESC
+                        ORDER BY id, gpa DESC
                         LIMIT $1 OFFSET $2`,
                 [perPageNumber, offset]);
 

@@ -95,6 +95,9 @@ const universityAttributes = [
     "facebook_link",
     "speciality_amount",
 ];
+const employerAttributes = [
+    'avatar',
+];
 
 const getUserData = async (user_id) => {
     const user = await db.query(`
