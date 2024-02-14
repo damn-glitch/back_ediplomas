@@ -647,17 +647,10 @@ router.put(
 router.get(
     `/${prefix}/employers/get`, async (req, res) => {
         try {
-            const users = await db.query(
-                `
-                    SELECT *
-                    FROM users
-                    WHERE role_id = 1
-                `
-            );
+            const users = await db.query(`SELECT * FROM users WHERE role_id = 1`);
 
             for (let i = 0; i < users.rows.length; i++) {
                 let data = await getEmployerData(users.rows[i].id);
-                // let temp = await getUniversityData(users.rows[i].id);
                 users.rows[i] = data;
             }
 
@@ -666,4 +659,60 @@ router.get(
             console.error("Error getting users:", error);
             return res.status(500).send("Error getting users.");
         }
-    });
+    }
+);
+
+router.get(
+    `/${prefix}/employers/search`, 
+    [
+        body('field')
+            .optional()
+            .isArray()
+            .withMessage('Field must be an array.')
+            .isString()
+            .withMessage('Field must be a string.'),
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json(errors);
+        }
+
+        const field = req.query.field;
+
+        let contentIds = [0];
+
+        try {
+            fieldsQuery = await db.query(`
+                SELECT content_id
+                FROM content_fields
+                WHERE type = 'field'
+                AND value = $1`, [field]);
+
+            if (fieldsQuery && fieldsQuery.rows && fieldsQuery.rows.length) {
+                let ids = fieldsQuery.rows.map(row => parseInt(row.content_id))
+
+                if (contentIds.includes(0)) {
+                    contentIds = ids;
+                } else {
+                    contentIds = ids.filter(value => contentIds.includes(value))
+                }
+            }
+
+            let query = `SELECT name FROM users WHERE role_id = 1 AND id = ANY($1)`;
+            
+            let names = [];
+            let employers = [];
+
+            employers = await db.query(query, [contentIds]);
+
+            names = employers.rows;
+
+            return res.status(200).json(names);
+        } catch (error) {
+            console.error("Error searching employers:", error);
+            return res.status(500).send("Error searching employers.");
+        }
+    }
+);
