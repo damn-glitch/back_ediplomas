@@ -75,7 +75,7 @@ const userAttributes = [
     "certificates",
     "program",
     "publish_year",
-
+    "field",
 ];
 const universityAttributes = [
     'gallery',
@@ -97,6 +97,7 @@ const universityAttributes = [
 ];
 const employerAttributes = [
     'avatar',
+    'field',
 ];
 
 const getUserData = async (user_id) => {
@@ -364,7 +365,7 @@ router.post(`/${prefix}/profile`, [
                     );
                     if (!attr.rows.length) {
                         await db.query(
-                            'insert into content_fields(content_id, type, value, created_at) values ($1, $2, $3, $4)',
+                            'insert into content_fields(content_id, type, value, created_at) values ($1, $2, $3, $4)', //need to copy
                             [req.user.id, key, attributes[key], new Date(),]
                         );
                     } else {
