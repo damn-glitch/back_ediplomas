@@ -716,3 +716,34 @@ router.get(
         }
     }
 );
+
+router.get(
+    `/${prefix}/employers/:user_id`, 
+    async (req, res) => {
+
+        const user_id = req.params.user_id;
+
+        try {
+            if (!user_id) {
+                return res.status(400).json({"error": `diploma_id is required after ${prefix}/ must be diploma_id (number)`})
+            }
+
+            const user = await db.query(`
+            SELECT users.id, role_id
+            FROM users
+                     INNER JOIN roles ON users.role_id = roles.id
+            WHERE users.id = $1 AND role_id = 1
+            `, [user_id]);
+
+            if (user.rows.length > 0) {
+                let data = await getUserData(user_id);
+                return res.json(data);
+            } else {
+                return res.status(404).send('User not found.');
+            }    
+        } catch (error) {
+            console.error("Error searching universities:", error);
+            return res.status(500).send("Error searching universities.");
+        }
+    }
+);
