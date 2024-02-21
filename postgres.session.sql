@@ -1,1 +1,1 @@
-SELECT * FROM users;
+SELECT COUNT(*) FROM users WHERE role_id = 1;
