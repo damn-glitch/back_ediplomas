@@ -105,7 +105,8 @@ router.post(`/${prefix}/register`, [
             }
             return true;
         })
-        .withMessage('Passwords are not the same.'),], async (req, res) => {
+        .withMessage('Passwords are not the same.'),],
+    async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json(errors);
@@ -234,7 +235,8 @@ router.post('/password-reset', [
         .withMessage('Passwords are not the same.'),
     body('code')
         .notEmpty()
-        .withMessage('Verification code must not be empty.')], async (req, res) => {
+        .withMessage('Verification code must not be empty.')],
+    async (req, res) => {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

@@ -29,6 +29,32 @@ const diplomaAttributes = [
 ]
 
 const prefix = "users";
+const userResumeAttributes = [
+    "skills",
+    "desired_position",
+    "desired_salary_amount",
+    "desired_schedule",
+    "gender",
+    "telegram",
+    "address",
+    "description",
+    "major",
+    "university_name",
+    "specialization",
+    "year_of_arrival",
+    "graduation_year",
+    "company_name",
+    "experience_start",
+    "experience_end",
+    'experience_still_working',
+    "desired_job_position",
+    "responsibility",
+    "certificates",
+    "program",
+    "publish_year",
+    "field",
+    "certificate_name",
+]
 const userAttributes = [
     "first_name",
     "last_name",
@@ -55,27 +81,7 @@ const userAttributes = [
     "branches_amount",
     "position",
     //
-    "skills",
-    "desired_position",
-    "desired_salary_amount",
-    "desired_schedule",
-    "gender",
-    "telegram",
-    "address",
-    "description",
-    "major",
-    "university_name",
-    "specialization",
-    "year",
-    "company_name",
-    "experience_start",
-    "experience_end",
-    "desired_job_position",
-    "responsibility",
-    "certificates",
-    "program",
-    "publish_year",
-    "field",
+    ...userResumeAttributes
 ];
 const universityAttributes = [
     'gallery',
@@ -130,8 +136,9 @@ const getUserData = async (user_id) => {
     }
     const university = await db.query(`
         select *
-        from universities
-        where id = $1`, [user.rows[0].university_id]);
+        from users
+        where users.university_id = $1`, [user.rows[0].university_id]);
+
     if (university.rows.length) {
         data['university_name'] = university.rows[0].name;
     }
@@ -239,6 +246,7 @@ const upload = multer({storage, fileFilter});
 const multiparty = require('multiparty');
 const http = require('http');
 const util = require('util');
+const generatePdf = require("../pdf");
 router.post('/upload', upload.single('file'), (req, res) => {
     try {
 
@@ -266,7 +274,7 @@ router.get(`/${prefix}/profile`, authenticate, async (req, res) => {
             let data = await getUserData(req.user.id);
             let role = user.rows[0].role_id;
             let newData = {};
-            if (role == 3) {
+            if (role == 3 || role == "3") {
                 let temp = await getDiplomaData(user.rows[0].id);
                 data = {...data, ...temp}
             }
@@ -381,7 +389,10 @@ router.post(`/${prefix}/profile`, [
                 let temp = await getUniversityData(user.rows[0].id);
                 data = {...data, ...temp}
             }
-            console.log(321)
+            if (user.rows[0].role_id == 3) {
+                let temp = await getDiplomaData(user.rows[0].id);
+                data = {...data, ...temp}
+            }
             return res.json(data);
         } catch (error) {
             console.error('Error updating user account:', error);
@@ -647,7 +658,9 @@ router.put(
 router.get(
     `/${prefix}/employers/get`, async (req, res) => {
         try {
-            const users = await db.query(`SELECT * FROM users WHERE role_id = 1`);
+            const users = await db.query(`SELECT *
+                                          FROM users
+                                          WHERE role_id = 1`);
 
             for (let i = 0; i < users.rows.length; i++) {
                 let data = await getEmployerData(users.rows[i].id);
@@ -663,7 +676,7 @@ router.get(
 );
 
 router.get(
-    `/${prefix}/employers/search`, 
+    `/${prefix}/employers/search`,
     [
         body('field')
             .optional()
@@ -688,7 +701,7 @@ router.get(
                 SELECT content_id
                 FROM content_fields
                 WHERE type = 'field'
-                AND value = $1`, [field]);
+                  AND value = $1`, [field]);
 
             if (fieldsQuery && fieldsQuery.rows && fieldsQuery.rows.length) {
                 let ids = fieldsQuery.rows.map(row => parseInt(row.content_id))
@@ -700,8 +713,11 @@ router.get(
                 }
             }
 
-            let query = `SELECT name FROM users WHERE role_id = 1 AND id = ANY($1)`;
-            
+            let query = `SELECT name
+                         FROM users
+                         WHERE role_id = 1
+                           AND id = ANY ($1)`;
+
             let names = [];
             let employers = [];
 
@@ -718,7 +734,7 @@ router.get(
 );
 
 router.get(
-    `/${prefix}/employers/:user_id`, 
+    `/${prefix}/employers/:user_id`,
     async (req, res) => {
 
         const user_id = req.params.user_id;
@@ -729,10 +745,11 @@ router.get(
             }
 
             const user = await db.query(`
-            SELECT users.id, role_id
-            FROM users
-                     INNER JOIN roles ON users.role_id = roles.id
-            WHERE users.id = $1 AND role_id = 1
+                SELECT users.id, role_id
+                FROM users
+                         INNER JOIN roles ON users.role_id = roles.id
+                WHERE users.id = $1
+                  AND role_id = 1
             `, [user_id]);
 
             if (user.rows.length > 0) {
@@ -740,10 +757,63 @@ router.get(
                 return res.json(data);
             } else {
                 return res.status(404).send('User not found.');
-            }    
+            }
         } catch (error) {
             console.error("Error searching universities:", error);
             return res.status(500).send("Error searching universities.");
         }
     }
 );
+
+router.get(
+    `/${prefix}/resume-generate`,
+    authenticate,
+    async (req, res) => {
+        try {
+            let data = await getUserData(req.user.id);
+            let temp = await getDiplomaData(req.user.id);
+            data = {...data, ...temp}
+            let timeValues = {
+                "full": "Полная занятость",
+                "partly": "Частичная занятость",
+                "project": "Проектная работа",
+                "intern": "Стажировка",
+            }
+            let sample = {
+                "fullname": `${data["last_name"]} ${data["first_name"]} ${data["middle_name"]}`,
+                "avatar": data["avatar"],
+                "position": data["desired_position"],
+                "salary": data["desired_salary_amount"] + "₸",
+                "time": timeValues[data["desired_schedule"]],
+                "dateOfBirth": data["date_of_birth"],
+                "phone": data["phone"],
+                "email": data["email"],
+                "address": data["address"],
+                "telegram": data["telegram"],
+                "skills": JSON.parse(data["skills"]),
+                "education": {
+                    "name": data["university_name"],
+                    "date_to": data["year"],
+                    "speciality": data["speciality_ru"]
+                },
+                "experience": {
+                    "name": data["company_name"],
+                    "job_title": data["desired_job_position"],
+                    "date_from": data["experience_start"],
+                    "date_to": data["experience_still_working"] ? null : data["experience_end"],
+                    "job_description": data["responsibility"]
+                },
+                "certificate": {
+                    "name": data["certificate_name"],
+                    "dates": data["publish_year"],
+                    "description": data["program"],
+                }
+            };
+            let link = await generatePdf(sample);
+            return res.json(link);
+
+        } catch (error) {
+            return res.status(500).send(`Error ${error}`);
+        }
+    })
+;
