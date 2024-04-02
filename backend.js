@@ -22,6 +22,7 @@ const otpRoutes = require('./src/routes/otpRoutes');
 const validateIINRoutes = require('./src/routes/validateIINRoutes');
 const diplomaRoutes = require('./src/routes/diplomaRoutes');
 const analyticsRoutes = require('./src/routes/analyticsRoutes');
+const vacancyRoutes = require('./src/routes/vacancyRoutes');
 const db = require('./src/config/database');
 
 

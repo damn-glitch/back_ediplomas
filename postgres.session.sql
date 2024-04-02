@@ -1,2 +1,2 @@
+select * from applications;
 
-SELECT * FROM diplomas;
