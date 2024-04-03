@@ -1,2 +1,2 @@
-select * from applications;
+select * from content_fields; 
 

@@ -8,7 +8,7 @@ const prefix = "vacancy";
 
 const vacancyStatuses = {
     "processing": "processing",
-    "approved": "approved",
+    "invited": "invited",
     "rejected": "rejected",
 };
 
@@ -141,10 +141,21 @@ router.get(
 
             if (user.rows[0].role_id == 3) {
                 const applications = await db.query(`
-                    SELECT applications.id, applications.employer_id, applications.status, applications.created_at, users.name AS employer_name
-                    FROM applications
-                            INNER JOIN users ON applications.employer_id = users.id
-                    WHERE applications.student_id = $1
+                SELECT 
+                    applications.id, 
+                    applications.employer_id, 
+                    applications.status, 
+                    applications.created_at, 
+                    users.name AS employer_name, 
+                    content_fields.value AS field
+                FROM 
+                    applications
+                INNER JOIN 
+                    users ON applications.employer_id = users.id
+                LEFT JOIN 
+                    content_fields ON applications.employer_id = content_fields.content_id AND content_fields.type = 'field'
+                WHERE 
+                    applications.student_id = $1
                 `, [req.user.id]);
 
                 return res.json(applications.rows);
