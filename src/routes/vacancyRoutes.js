@@ -73,7 +73,7 @@ router.post(
 router.put(
     `/${prefix}/status`, 
     [
-        body('application').notEmpty().withMessage('Application must not be empty'), 
+        body('application_id').notEmpty().withMessage('Application must not be empty'), 
         body('status').notEmpty().withMessage('Status must not be empty')
     ], 
     authenticate, 
@@ -84,7 +84,7 @@ router.put(
             return res.status(400).json(errors);
         }
 
-        const {application, status} = req.body;
+        const {application_id, status} = req.body;
 
         try {
             const user = await db.query(`
@@ -101,7 +101,7 @@ router.put(
                 SELECT id
                 FROM applications
                 WHERE id = $1
-            `, [application]);
+            `, [application_id]);
 
             if (applicationRecord.rows.length === 0) {
                 return res.status(404).send('Application not found.');
@@ -115,7 +115,7 @@ router.put(
                 UPDATE applications
                 SET status = $1
                 WHERE id = $2
-            `, [status, application]);
+            `, [status, application_id]);
 
             return res.status(200).send('Application status updated.');
         } catch (error) {
@@ -161,10 +161,26 @@ router.get(
                 return res.json(applications.rows);
             } else if (user.rows[0].role_id == 1) {
                 const applications = await db.query(`
-                    SELECT applications.id, applications.student_id, applications.status, applications.created_at, users.name AS student_name
-                    FROM applications
-                            INNER JOIN users ON applications.student_id = users.id
-                    WHERE applications.employer_id = $1
+                    SELECT 
+                        applications.id, 
+                        applications.student_id, 
+                        applications.status, 
+                        applications.created_at, 
+                        users.name AS student_name,
+                        diplomas.university_id AS university_id,
+                        diplomas.year AS year,
+                        diplomas.speciality_en AS speciality_en,
+                        diplomas.speciality_ru AS speciality_ru,
+                        diplomas.speciality_kz AS speciality_kz,
+                        diplomas.gpa AS gpa
+                    FROM 
+                        applications
+                    INNER JOIN 
+                        users ON applications.student_id = users.id
+                    LEFT JOIN 
+                        diplomas ON applications.student_id = diplomas.user_id 
+                    WHERE 
+                        applications.employer_id = $1
                 `, [req.user.id]);
 
                 return res.json(applications.rows);
