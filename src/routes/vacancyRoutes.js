@@ -172,7 +172,8 @@ router.get(
                         diplomas.speciality_en AS speciality_en,
                         diplomas.speciality_ru AS speciality_ru,
                         diplomas.speciality_kz AS speciality_kz,
-                        diplomas.gpa AS gpa
+                        diplomas.gpa AS gpa,
+                        diplomas.id AS diploma_id
                     FROM 
                         applications
                     INNER JOIN 
