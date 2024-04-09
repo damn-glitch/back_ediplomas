@@ -20,14 +20,34 @@ const diplomaAttributes = [
     "diploma_protocol_en",
     "diploma_protocol_ru",
     "diploma_protocol_kz",
+    "diploma_iin",
+    "diploma_phone",
+    "diploma_email",
+    "diploma_gpa",
+    "diploma_region",
+    "diploma_gender",
+    "diploma_nationality",
+    "diploma_faculty",
+    "diploma_diploma_total",
+    "diploma_smart_contract_cid",
     "faculty",
     "subjectsHigher",
     "subjectsStandard",
     "additionalSubjects",
     "grade",
-    "verified",
-]
 
+    "diploma_student_id",
+    "diploma_date_of_birth",
+    "diploma_Number",
+    "diploma_degree",
+    "diploma_protocol_number",
+    "diploma_grant",
+    "diploma_diploma",
+    "diploma_with_honor",
+    "diploma_city",
+
+
+]
 const prefix = "users";
 const userResumeAttributes = [
     "skills",
@@ -182,22 +202,24 @@ const getDiplomaData = async (user_id) => {
     const diploma = await db.query(`
         SELECT *
         FROM diplomas
-        WHERE diplomas.user_id = $1
+        WHERE user_id = $1
     `, [user_id]);
 
     if (!diploma.rows.length) {
         return [];
     }
     let data = diploma.rows[0];
-    let diploma_id = data.id;
+
     for (let i = 0; i < diplomaAttributes.length; i++) {
+
         const key = diplomaAttributes[i];
         if (diploma.rows[0][key] !== undefined) continue;
-        let attr = await db.query(
-            'select * from content_fields where content_id = $1 and type = $2',
-            [diploma_id, key]
-        );
-        data[key] = attr.rows.length ? attr.rows[0].value : null;
+        let attr = await db.query('select * from content_fields where content_id = $1 and type = $2 and deleted_at IS NULL', [data.id, key]);
+        try {
+            data[key] = attr.rows.length ? JSON.parse(attr.rows[0].value) : null;
+        } catch (e) {
+            data[key] = attr.rows.length ? attr.rows[0].value : null;
+        }
     }
     return data;
 }
@@ -264,7 +286,7 @@ router.post('/upload', upload.single('file'), (req, res) => {
 router.get(`/${prefix}/profile`, authenticate, async (req, res) => {
     try {
         const user = await db.query(`
-            SELECT users.id, role_id
+            SELECT users.id, users.role_id, users.university_id
             FROM users
                      INNER JOIN roles ON users.role_id = roles.id
             WHERE users.id = $1
@@ -282,13 +304,23 @@ router.get(`/${prefix}/profile`, authenticate, async (req, res) => {
                 let temp = await getUniversityData(user.rows[0].id);
                 data = {...data, ...temp}
             }
+            /* university name start */
+            const university = await db.query(`
+                SELECT *
+                FROM users
+                WHERE university_id = $1
+                  AND role_id = 2
+            `, [user.rows[0].university_id,]);
+            if (university.rows.length) {
+                data['university_name'] = university.rows[0].name;
+            }
             return res.json(data);
         } else {
             return res.status(404).send('User not found.');
         }
     } catch (error) {
         console.error('Error fetching user account:', error);
-        return res.status(500).send('Error fetching user account.');
+        return res.status(500).send('Error fetching user account.' + error);
     }
 });
 router.get('/account', authenticate, async (req, res) => {
@@ -801,7 +833,7 @@ router.get(
                     "job_title": data["desired_job_position"],
                     "date_from": data["experience_start"],
                     "date_to": data["experience_still_working"] ? null : data["experience_end"],
-                    "job_description": data["responsibility"]
+                    "job_description": data["responsibility"] ?? "",
                 },
                 "certificate": {
                     "name": data["certificate_name"],
@@ -813,6 +845,7 @@ router.get(
             return res.json(link);
 
         } catch (error) {
+            console.log(error)
             return res.status(500).send(`Error ${error}`);
         }
     })

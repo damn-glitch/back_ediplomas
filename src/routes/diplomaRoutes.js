@@ -4,13 +4,44 @@ const axios = require("axios");
 const {body, validationResult} = require("express-validator");
 const prefix = "diploma"
 
-const diplomaAttributes = ["diploma_distinction_en", "diploma_distinction_ru", "diploma_distinction_kz", "diploma_degree_en", "diploma_degree_ru", "diploma_degree_kz", "diploma_protocol_en", "diploma_protocol_ru", "diploma_protocol_kz",
-
-    "diploma_iin", "diploma_phone", "diploma_email", "diploma_gpa", "diploma_region", "diploma_gender", "diploma_nationality", "diploma_grant", "diploma_faculty", "diploma_diploma_total",
-
+const diplomaAttributes = [
+    "diploma_distinction_en",
+    "diploma_distinction_ru",
+    "diploma_distinction_kz",
+    "diploma_degree_en",
+    "diploma_degree_ru",
+    "diploma_degree_kz",
+    "diploma_protocol_en",
+    "diploma_protocol_ru",
+    "diploma_protocol_kz",
+    "diploma_iin",
+    "diploma_phone",
+    "diploma_email",
+    "diploma_gpa",
+    "diploma_region",
+    "diploma_gender",
+    "diploma_nationality",
+    "diploma_faculty",
+    "diploma_diploma_total",
     "diploma_smart_contract_cid",
+    "faculty",
+    "subjectsHigher",
+    "subjectsStandard",
+    "additionalSubjects",
+    "grade",
 
-    "faculty", "subjectsHigher", "subjectsStandard", "additionalSubjects", "grade", "verified",]
+    "diploma_student_id",
+    "diploma_date_of_birth",
+    "diploma_Number",
+    "diploma_degree",
+    "diploma_protocol_number",
+    "diploma_grant",
+    "diploma_diploma",
+    "diploma_with_honor",
+    "diploma_city",
+
+
+]
 router.get(`/${prefix}`, async (req, res) => {
     try {
         // Extract page and per_page parameters from the request query
@@ -62,7 +93,7 @@ router.get(`/${prefix}/:diploma_id`, async (req, res) => {
         }
         // Fetch diplomas from the database based on the offset and limit
         const diplomaItem = await db.query(`
-            SELECT id
+            SELECT *
             FROM diplomas
             WHERE id = $1
               AND visibility = true
@@ -71,11 +102,13 @@ router.get(`/${prefix}/:diploma_id`, async (req, res) => {
             return res.status(404).json({"error": "Diploma not found"});
         }
         const diplomaId = diplomaItem.rows[0].id;
-        const diploma = await getDiplomaFields(diplomaId);
-
+        const diplomaFields = await getDiplomaFields(diplomaId);
+        const diploma = {...diplomaItem.rows[0], ...diplomaFields};
+        if (diploma['image'].split(',').length > 1) {
+            diploma['image'] = diploma['image'].replace(' ', '').split(',');
+        }
         return res.json(diploma);
     } catch (error) {
-        console.error('Error sending OTP:', error);
         return res.status(500).json({error: error});
     }
 });
@@ -103,17 +136,39 @@ router.get(`/${prefix}/:university_id/:hash`, async (req, res) => {
         }
         // Fetch diplomas from the database based on the offset and limit
         const diplomaItem = await db.query(`
-            SELECT id
+            SELECT *
             FROM diplomas
             WHERE iin = $1
-              AND visibility = true
               AND university_id = $2
         `, [iin, university_id]);
         if (diplomaItem.rows.length === 0) {
             return res.status(404).json({"error": "Diploma not found"});
         }
         const diplomaId = diplomaItem.rows[0].id;
-        const diploma = await getDiplomaFields(diplomaId);
+        const createdDate = new Date(diplomaItem.rows[0].created_at);
+        const formattedCreatedDate = `${padZero(createdDate.getUTCHours())}:${padZero(createdDate.getUTCMinutes())} - ${padZero(createdDate.getUTCDate())}.${padZero(createdDate.getUTCMonth() + 1)}.${createdDate.getUTCFullYear()}`;
+
+        const diplomaFields = await getDiplomaFields(diplomaId);
+        const diploma = {...diplomaItem.rows[0], ...diplomaFields};
+        diploma['created_at'] = formattedCreatedDate;
+
+        /* university name start */
+        const university = await db.query(`
+            SELECT name
+            FROM users
+            WHERE university_id = $1
+              AND role_id = 2
+        `, [university_id,]);
+        if (university.rows.length) {
+            diploma['university_name'] = university.rows[0].name;
+        }
+        /* university name end */
+
+        /* image refactor to array if so | start */
+        if (diploma['image'].split(',').length > 1) {
+            diploma['image'] = diploma['image'].replace(' ', '').split(',');
+        }
+        /* image refactor to array if so | end */
 
         return res.json(diploma);
     } catch (error) {
@@ -126,7 +181,6 @@ const getDiplomaFields = async (diploma_id) => {
         SELECT *
         FROM diplomas
         WHERE id = $1
-          AND visibility = true
     `, [diploma_id]);
 
     if (!item.rows.length) {
@@ -154,10 +208,15 @@ const getDiplomaFields = async (diploma_id) => {
     }
 
     for (let i = 0; i < diplomaAttributes.length; i++) {
+
         const key = diplomaAttributes[i];
         if (item.rows[0][key] !== undefined) continue;
         let attr = await db.query('select * from content_fields where content_id = $1 and type = $2 and deleted_at IS NULL', [diploma_id, key]);
-        data[key] = attr.rows.length ? attr.rows[0].value : null;
+        try {
+            data[key] = attr.rows.length ? JSON.parse(attr.rows[0].value) : null;
+        } catch (e) {
+            data[key] = attr.rows.length ? attr.rows[0].value : null;
+        }
     }
     return data;
 }

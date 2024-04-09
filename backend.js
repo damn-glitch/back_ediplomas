@@ -22,6 +22,7 @@ const otpRoutes = require('./src/routes/otpRoutes');
 const validateIINRoutes = require('./src/routes/validateIINRoutes');
 const diplomaRoutes = require('./src/routes/diplomaRoutes');
 const analyticsRoutes = require('./src/routes/analyticsRoutes');
+const createUsers = require('./src/routes/createUsers');
 const db = require('./src/config/database');
 
 
@@ -109,3 +110,79 @@ startServer();
 router.get('/', async (req, res) => {
     res.json("Hi page");
 })
+// const {contractAbi} = require("./src/const/api");
+// const { ethers } = require('ethers');
+//
+// const providerUrl = 'https://warmhearted-small-firefly.bsc-testnet.quiknode.pro/5c446e722477d15baab0625234961809b8976385/'; // BSC Testnet
+// const privateKey = '9f9e3b9d1cfaa39d45c23c50bf8a67327f7671da9e7fcbedb2a9acea32f765d4'; // Replace with your actual private key
+// const factoryContractAddress = '0x2f9914aAE53086204e565ecEbb51dA60D17460d3';
+// const factoryContractABI = contractAbi; // Replace with your factory contract ABI
+//
+// async function createDiploma(name, symbol, CID, adminWallet) {
+//   try {
+//     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+//     const wallet = new ethers.Wallet(privateKey, provider);
+//     const factoryContract = new ethers.Contract(factoryContractAddress, factoryContractABI, wallet);
+//
+//     const diplomaBaseURI = `ipfs://${CID}/`;
+//
+//     const gasLimit = 5000000; // Adjust gas limit as needed
+//     const gasPrice = new ethers.utils.parseUnits('5', 'gwei'); // Example gas price: 5 Gwei
+//
+//     const transaction = await factoryContract.createNewDiploma(name, symbol, diplomaBaseURI, adminWallet
+//             , {
+//                 gasLimit: gasLimit, gasPrice: gasPrice
+//             }
+//         );
+//
+//     console.log('Transaction hash:', transaction);
+//
+//     const receipt = await transaction.wait();
+//     console.log('Diploma contract created at:', receipt.events[0].address); // Adjust index based on event structure
+//
+//   } catch (error) {
+//     console.error('Error creating diploma:', error);
+//   }
+// }
+//
+// // Call the function with your data
+// // Example usage
+// const name = 'My Diploma';
+// const symbol = 'DIPLOMA';
+// const diplomaBaseURI = 'https://example.com/diplomas/';
+// const adminWallet = '0x740FC3b6517673FA5C999BC45Ed4D02f397C19b1';
+//
+// createDiploma(name, symbol, diplomaBaseURI, adminWallet);
+//
+// // async function start() {
+// //     try {
+// //         const name = '123';
+// //         const symbol = '3213';
+// //         const CID = '312313';
+// //         const university_id = 3;
+// //
+// //         const providerUrl = 'https://warmhearted-small-firefly.bsc-testnet.quiknode.pro/5c446e722477d15baab0625234961809b8976385/';
+// //         const provider = new ethers.providers.Web3Provider(providerUrl);
+// //         await provider.send("eth_requestAccounts", []);
+// //         console.log(provider);
+// //         const factoryContractAddress = '0x2f9914aAE53086204e565ecEbb51dA60D17460d3';
+// //         const factoryContractABI = contractAbi; // Replace with your factory contract ABI
+// //
+// //         const privateKey = '9f9e3b9d1cfaa39d45c23c50bf8a67327f7671da9e7fcbedb2a9acea32f765d4';
+// //
+// //         let diplomaBaseURI = `ipfs://${CID}/`;
+// //         const adminWallet = "0x984653E3757498e38eE10676e272366D7d45Fe71";
+// //
+// //         // const wallet = new ethers.Wallet(privateKey, provider);
+// //         //
+// //         // const factoryContract = new ethers.Contract(factoryContractAddress, factoryContractABI, wallet);
+// //         // const transaction = await factoryContract.createNewDiploma(name, symbol, diplomaBaseURI, adminWallet);
+// //         //
+// //         // const receipt = await transaction.wait();
+// //         //
+// //         // const contractAddress = receipt.events[0].address; // Adjust the index based on your event structure
+// //         // console.log(contractAddress);
+// //     } catch (error) {
+// //         console.error('Error creating new Diplomas contract:', error);
+// //     }
+// // }

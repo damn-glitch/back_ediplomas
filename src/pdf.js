@@ -219,7 +219,7 @@ async function generatePdf(data) {
         });
     }
 
-    const experienceText = state.experience.job_description;
+    const experienceText = state.experience.job_description ?? "";
     const experienceLines = Math.ceil(experienceText.length / 82);
     // Calculate the total height of the multiline text
     const totalExperienceTextHeight = experienceLines * lineHeight + educationOffset + 24 + 14;
