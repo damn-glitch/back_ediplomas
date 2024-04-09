@@ -1,1 +1,3 @@
-SELECT COUNT(*) FROM users WHERE role_id = 1;
+select * from applications;
+
+
