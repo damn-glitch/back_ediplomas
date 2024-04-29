@@ -5,6 +5,8 @@ const router = require('./router');
 const {body, validationResult} = require("express-validator");
 
 const prefix = "graduates";
+
+router.use(express.json());
 const validateName = (req, res, next) => {
     const name = req.query.name;
     if (!name) {
@@ -113,30 +115,21 @@ router.get(`/${prefix}`, authenticate, async (req, res) => {
     }
 });
 
-
 router.get(
     `/${prefix}/search`,
     [
-        body('gpaL')
+        body('gpa')
             .optional()
             .isFloat()
-            .withMessage('GPA left boundary must be a number.'),
-        body('gpaR')
-            .optional()
-            .isFloat()
-            .withMessage('GPA right boundary must be a number.'),
+            .withMessage('GPA must be a number.'),
         body('specialities')
             .optional()
-            .isArray()
-            .withMessage('Specialities must be an array.')
             .isString()
-            .withMessage('Each speciality must be a string.'),
+            .withMessage('Specialities must be a string.'),
         body('region')
             .optional()
             .isArray()
-            .withMessage('Regions must be an array.')
-            .isString()
-            .withMessage('Each region must be a string.'),
+            .withMessage('Regions must be a strings.'),
         body('degree')
             .optional()
             .isArray()
@@ -155,6 +148,10 @@ router.get(
             .withMessage('University_id must be an array.')
             .isInt()
             .withMessage('Each id must be an integer.'),
+        body('rating')
+            .optional()
+            .isFloat()
+            .withMessage('Rating must be a number.'),
     ],
     async (req, res) => {
         const errors = validationResult(req);
@@ -163,67 +160,60 @@ router.get(
         }
 
         const name = req.query.name;
-        const gpaL = req.query.gpaL;
-        const gpaR = req.query.gpaR;
+        const gpa = req.query.gpa;
+        const rating = req.query.rating;
         const speciality = req.query.specialities;
         const region = req.query.region;
-        const degree = req.query.degree;
-        const year = req.query.year;
         const university_id = req.query.university_id;
-        const ratingL = req.query.ratingL;
-        const ratingR = req.query.ratingR;
+
+        const specialitiesArray = speciality ? speciality.split(',') : [];
+        const regionsArray = region? region.split(',') : [];
+        const universityArray= university_id ? university_id.split(','): [];
 
         const query_dict = {
             name: name ?? '',
-            gpa: gpaL && gpaR ? [parseFloat(gpaL), parseFloat(gpaR)] : null,
+            gpa: gpa ? parseFloat(gpa) : null,
             speciality: speciality,
             region: region,
-            degree: degree,
-            year: year,
             university_id: university_id,
-            rating: ratingL && ratingR ? [parseFloat(ratingL), parseFloat(ratingR)] : null,
+            rating: rating ? parseFloat(rating) : null,
         };
+
         let contentIds = [0];
         let hasFields = false;
         let hasColumns = false;
+
         try {
             for (const [key, value] of Object.entries(query_dict)) {
                 if (!value) continue;
 
                 let fieldsQuery = null;
-                console.log(key, value);
-                if (key === 'gpa' || key === 'region' || key === 'year') {
+                console.log(key, value, '---');
+                if (key === 'region' ) {
                     hasFields = true;
                 }
                 switch (key) {
-                    case 'gpa' : {
-                        fieldsQuery = await db.query(`
-                            SELECT content_id
-                            FROM content_fields
-                            WHERE type = 'diploma_gpa'
-                              AND value > $1
-                              AND value < $2
-                        `, [value[0], value[1]]);
+                    case 'region': {
+                        if (regionsArray.length > 0) {
+                            let placeholders = regionsArray.map((_, index) => `$${index + 1}`).join(', ');
+                            fieldsQuery = await db.query(`
+                                SELECT content_id
+                                FROM content_fields
+                                WHERE type = 'diploma_region'
+                                  AND value IN (${placeholders})
+                            `, regionsArray);
+                        }
                         break;
                     }
-                    case 'region' : {
-                        fieldsQuery = await db.query(`
-                            SELECT content_id
-                            FROM content_fields
-                            WHERE type = 'diploma_region'
-                              AND value like $1
-                        `, [`%${value}%`]);
-                        break;
-                    }
-                    case 'year' : {
-                        fieldsQuery = await db.query(`
-                            SELECT content_id
-                            FROM content_fields
-                            WHERE type = 'diploma_year'
-                              AND value = $1
-                        `, [value]);
-                        break;
-                    }
+                    //case 'year' : {
+                        //fieldsQuery = await db.query(`
+                            //SELECT content_id
+                            //FROM content_fields
+                            //WHERE type = 'diploma_year'
+                              //AND value = $1
+                        //`, [value]);
+                        //break;
+                    //}
                 }
                 if (fieldsQuery && fieldsQuery.rows && fieldsQuery.rows.length) {
 
@@ -236,6 +226,7 @@ router.get(
                     }
 
                 }
+
             }
 
             let query = `select name_en
@@ -250,19 +241,29 @@ router.get(
                 }
 
                 switch (key) {
-                    case 'name' :
+                    case 'name':
                         query += `(name_en ilike '%${value}%' or name_ru ilike '%${value}%' or name_kz ilike '%${value}%') AND`;
                         break;
- 
+                    case 'gpa':
+                        query += `(gpa <= ${value}) AND`;
+                        break;
                     case 'speciality':
-                    case 'degree':
-                        query += `(speciality_en ilike '%${value}%' or speciality_ru ilike '%${value}%' or speciality_kz ilike '%${value}%') AND`;
+                        query += '(';
+                        for (const spec of specialitiesArray) {
+                            query += `(speciality_en ilike '%${spec}%' or speciality_ru ilike '%${spec}%' or speciality_kz ilike '%${spec}%') OR `;
+                        }
+                        query = query.slice(0, -4) + ') AND';
                         break;
                     case 'university_id':
-                        query += `(university_id = ${value}) AND`;
+                        query += '(';
+                        for (const id of universityArray) {
+                            query += `(university_id = ${id}) OR `;
+                        }
+                        query = query.slice(0, -4) + ') AND';
                         break;
+
                     case 'rating':
-                        query += `(rating > ${value[0]} AND rating < ${value[1]}) AND`;
+                        query += `(rating <= ${value}) AND`;
                         break;
                 }
             }
@@ -275,6 +276,7 @@ router.get(
             } else if (hasColumns) {
                 diplomas = await db.query(`${query} visibility = true`);
             }
+
 
             if ((hasColumns || hasFields) && diplomas.rows.length) {
                 names = diplomas.rows;
