@@ -173,6 +173,7 @@ router.get(
         const ratingL = req.query.ratingL;
         const ratingR = req.query.ratingR;
 
+        console.log('Query:', req.query);
         const query_dict = {
             name: name ?? '',
             gpa: gpaL && gpaR ? [parseFloat(gpaL), parseFloat(gpaR)] : null,
@@ -183,6 +184,7 @@ router.get(
             university_id: university_id,
             rating: ratingL && ratingR ? [parseFloat(ratingL), parseFloat(ratingR)] : null,
         };
+        console.log('Query dict:', query_dict);
         let contentIds = [0];
         let hasFields = false;
         let hasColumns = false;
@@ -192,20 +194,21 @@ router.get(
 
                 let fieldsQuery = null;
                 console.log(key, value);
-                if (key === 'gpa' || key === 'region' || key === 'year') {
+                if ( key === 'region' || key === 'year') {
                     hasFields = true;
                 }
                 switch (key) {
-                    case 'gpa' : {
-                        fieldsQuery = await db.query(`
-                            SELECT content_id
-                            FROM content_fields
-                            WHERE type = 'diploma_gpa'
-                              AND value > $1
-                              AND value < $2
-                        `, [value[0], value[1]]);
-                        break;
-                    }
+                    // case 'gpa' : {
+                    //     console.log('GPA:', value);
+                    //     fieldsQuery = await db.query(`
+                    //         SELECT content_id
+                    //         FROM content_fields
+                    //         WHERE type = 'diploma_gpa'
+                    //           AND value > $1
+                    //           AND value < $2
+                    //     `, [value[0], value[1]]);
+                    //     break;
+                    // }
                     case 'region' : {
                         fieldsQuery = await db.query(`
                             SELECT content_id
@@ -245,7 +248,7 @@ router.get(
             for (const [key, value] of Object.entries(query_dict)) {
                 if (!value) continue;
 
-                if (key === 'name' || key === 'speciality' || key === 'degree' || key === 'university_id' || key === 'rating') {
+                if (key === 'name' || key === 'speciality' || key === 'degree' || key === 'university_id' || key === 'rating' || key === 'gpa') {
                     hasColumns = true;
                 }
 
@@ -263,6 +266,9 @@ router.get(
                         break;
                     case 'rating':
                         query += `(rating > ${value[0]} AND rating < ${value[1]}) AND`;
+                        break;
+                    case 'gpa':
+                        query += `(gpa > ${value[0]} AND gpa < ${value[1]}) AND`;
                         break;
                 }
             }

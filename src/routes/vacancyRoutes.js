@@ -167,19 +167,45 @@ router.get(
                         applications.status, 
                         applications.created_at, 
                         users.name AS student_name,
+                        users.email AS student_email,
                         diplomas.university_id AS university_id,
                         diplomas.year AS year,
                         diplomas.speciality_en AS speciality_en,
                         diplomas.speciality_ru AS speciality_ru,
                         diplomas.speciality_kz AS speciality_kz,
+                        diplomas.name_en AS name_en,
+                        diplomas.name_ru AS name_ru,
+                        diplomas.name_kz AS name_kz,
+                        diplomas.rating AS rating,
                         diplomas.gpa AS gpa,
-                        diplomas.id AS diploma_id
+                        diplomas.id AS diploma_id,
+                        cf_1.value AS diploma_email,
+                        cf_2.value AS diploma_city,
+                        cf_3.value AS diploma_nationality,
+                        cf_4.value AS diploma_phone,
+                        cf_5.value AS diploma_region,
+                        cf_6.value AS diploma_date_of_birth,
+                        cf_7.value AS diploma_degree
                     FROM 
                         applications
                     INNER JOIN 
                         users ON applications.student_id = users.id
                     LEFT JOIN 
-                        diplomas ON applications.student_id = diplomas.user_id 
+                        diplomas ON applications.student_id = diplomas.user_id
+                    LEFT JOIN
+                        content_fields AS cf_1 ON diplomas.id = cf_1.content_id AND cf_1.type = 'diploma_email'
+                    LEFT JOIN
+                        content_fields AS cf_2 ON diplomas.id = cf_2.content_id AND cf_2.type = 'diploma_city'
+                    LEFT JOIN
+                        content_fields AS cf_3 ON diplomas.id = cf_3.content_id AND cf_3.type = 'diploma_nationality'
+                    LEFT JOIN
+                        content_fields AS cf_4 ON diplomas.id = cf_4.content_id AND cf_4.type = 'diploma_phone'
+                    LEFT JOIN
+                        content_fields AS cf_5 ON diplomas.id = cf_5.content_id AND cf_5.type = 'diploma_region'
+                    LEFT JOIN
+                        content_fields AS cf_6 ON diplomas.id = cf_6.content_id AND cf_6.type = 'diploma_date_of_birth'
+                    LEFT JOIN
+                        content_fields AS cf_7 ON diplomas.id = cf_7.content_id AND cf_7.type = 'diploma_degree'
                     WHERE 
                         applications.employer_id = $1
                 `, [req.user.id]);

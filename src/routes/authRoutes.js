@@ -311,6 +311,8 @@ router.post('/password-reset', [body('email')
 
         const {email, password, code} = req.body;
 
+        console.log("entered password reset");
+
         try {
             //validating otp code
             const otpResult = await db.query('SELECT otp FROM otp_table WHERE email = $1 ORDER BY created_at DESC LIMIT 1', [email]);
@@ -403,8 +405,8 @@ router.post(`/${prefix}/authorize-with-ds`, async (req, res) => {
                 role_id = role.rows[0].id;
             }
             await db.query(`INSERT INTO users
-                                (first_name, middle_name, last_name, role_id)
-                            VALUES ($1, $2, $3, $4)
+                                (first_name, middle_name, last_name, role_id, email_validated)
+                            VALUES ($1, $2, $3, $4, true)
             `, [parsedData.name, parsedData.middlename ? parsedData.middlename : null, parsedData.surname, role_id]);
 
             let existingIIN = await db.query(`select value, content_id

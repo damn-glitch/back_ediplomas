@@ -5,7 +5,7 @@ const analytics_Button = 3;
 const router = require('./router');
 const {body, validationResult} = require("express-validator");
 const {json} = require("express");
-
+const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -263,6 +263,46 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
+const changePassword = async (oldPass, newPass, reNewPass, email) => {
+    if (newPass !== reNewPass) {
+        return;
+    }
+
+    try { 
+        const user = await db.query('SELECT *, users.id FROM users INNER JOIN roles ON users.role_id = roles.id WHERE email = $1', [email]);
+        if (user.rows.length === 0) {
+            console.error('User not found.');
+            return;
+        }
+
+        if (!user.rows[0].password) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPass, salt);
+            db.query('UPDATE users set password = $1 where id = $2', [hashedPassword, user.rows[0]['id']]);
+            return;
+        } else {
+            if (!oldPass) {
+                console.error('All fields are required.');
+                return;
+            }
+            const validPassword = await bcrypt.compare(oldPass, user.rows[0].password);
+            if (!validPassword) {
+                console.error('Invalid password.');
+                return;
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPass, salt);
+            db.query('UPDATE users set password = $1 where id = $2', [hashedPassword, user.rows[0]['id']]);        
+        }
+    } catch (error) {
+        console.error('Error updating user password:', error);
+        return;
+    }
+
+    console.log('gone through all of this');
+};
+
 const upload = multer({storage, fileFilter});
 
 const multiparty = require('multiparty');
@@ -364,6 +404,7 @@ router.post(`/${prefix}/profile`, [
         }
 
         const {attributes} = req.body;
+        console.log('Entered the profile!')
         console.log(attributes)
 
         const user = await db.query(`
@@ -416,6 +457,11 @@ router.post(`/${prefix}/profile`, [
                     }
                 }
             }
+
+            if(attributes['newPassword'] && attributes['rePassword']){
+                changePassword(attributes['password'], attributes['newPassword'], attributes['rePassword'], attributes['email']);
+            }
+
             let data = await getUserData(req.user.id);
             if (user.rows[0].role_id == 2) {
                 let temp = await getUniversityData(user.rows[0].id);
@@ -716,6 +762,10 @@ router.get(
             .withMessage('Field must be an array.')
             .isString()
             .withMessage('Field must be a string.'),
+        body('text')
+            .optional()
+            .isString()
+            .withMessage('Name must be a string.'),
     ],
     async (req, res) => {
         const errors = validationResult(req);
@@ -724,7 +774,10 @@ router.get(
             return res.status(400).json(errors);
         }
 
+        console.log(req.query);
+
         const field = req.query.field;
+        const name = req.query.text;
 
         let contentIds = [0];
 
@@ -745,6 +798,8 @@ router.get(
                 }
             }
 
+            console.log(contentIds);
+
             let query = `SELECT name
                          FROM users
                          WHERE role_id = 1
@@ -753,10 +808,33 @@ router.get(
             let names = [];
             let employers = [];
 
+            if (name && name.length > 0 && contentIds.includes(0)){
+                query = `SELECT name
+                            FROM users
+                            WHERE role_id = 1
+                            AND name ILIKE ($1)`;
+
+                employers = await db.query(query, [`%${name}%`]);
+                names = employers.rows;
+                console.log(names);
+                return res.status(200).json(names);
+            } else if (name && name.length > 0 && !contentIds.includes(0)) {
+                query = `SELECT name
+                            FROM users
+                            WHERE role_id = 1
+                            AND id = ANY ($1)
+                            AND name ILIKE ($2)`;
+
+                employers = await db.query(query, [contentIds, `%${name}%`]);
+                names = employers.rows;
+                console.log(names);
+                return res.status(200).json(names);
+            }
+
             employers = await db.query(query, [contentIds]);
 
             names = employers.rows;
-
+            console.log(names);
             return res.status(200).json(names);
         } catch (error) {
             console.error("Error searching employers:", error);
