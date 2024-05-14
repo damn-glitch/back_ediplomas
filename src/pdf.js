@@ -1,11 +1,11 @@
 const fs = require('fs').promises;
 const sharp = require('sharp'); // Import sharp library
-const { PDFDocument, rgb } = require('pdf-lib');
+const {PDFDocument, rgb} = require('pdf-lib');
 const fontkit = require('@pdf-lib/fontkit');
 
 async function applyCircularMask(imageBytes, radius) {
     const image = await sharp(imageBytes)
-        .resize(2 * radius, 2 * radius, { fit: 'cover' })
+        .resize(2 * radius, 2 * radius, {fit: 'cover'})
         .composite([{
             input: Buffer.from(`<svg><circle cx="${radius}" cy="${radius}" r="${radius}" /></svg>`),
             blend: 'dest-in'
@@ -15,6 +15,7 @@ async function applyCircularMask(imageBytes, radius) {
 
     return image;
 }
+
 async function generatePdf(data) {
     // Create a new PDF document
     let file_name = data.fullname.replaceAll(" ", "_");
@@ -22,6 +23,9 @@ async function generatePdf(data) {
     pdfDoc.registerFontkit(fontkit)
     // Add a new page to the PDF
     const page = pdfDoc.addPage();
+    // const fontRegularBytes = await fs.readFile('./src/fonts/Montserrat-Regular.ttf',);
+    // const fontSemiBoldBytes = await fs.readFile('./src/fonts/Montserrat-SemiBold.ttf',);
+    // const fontBoldBytes = await fs.readFile('./src/fonts/Montserrat-Bold.ttf',);
     const fontRegularBytes = await fs.readFile('/var/www/ediploma.kz/src/fonts/Montserrat-Regular.ttf',);
     const fontSemiBoldBytes = await fs.readFile('/var/www/ediploma.kz/src/fonts/Montserrat-SemiBold.ttf',);
     const fontBoldBytes = await fs.readFile('/var/www/ediploma.kz/src/fonts/Montserrat-Bold.ttf',);
@@ -36,6 +40,7 @@ async function generatePdf(data) {
 
     // Add an image to the page
 
+    // const headLineBytes = await fs.readFile('./src/images/Logos.jpg');
     const headLineBytes = await fs.readFile('/var/www/ediploma.kz/src/images/Logos.jpg');
     const headLine = await pdfDoc.embedJpg(headLineBytes);
     // const imageWidth = 200;
@@ -54,6 +59,7 @@ async function generatePdf(data) {
     const textGray = rgb(88 / 255, 96 / 255, 124 / 255);
     const textBlue = rgb(59 / 255, 130 / 255, 246 / 255);
 
+    // const avatarBytes = await fs.readFile(`./${state.avatar ?? "src/images/Avatar.png"}`);
     const avatarBytes = await fs.readFile(`/var/www/ediploma.kz/${state.avatar ?? "src/images/Avatar.png"}`);
 
     const maskRadius = 200; // Adjust the radius according to your preference
@@ -95,7 +101,8 @@ async function generatePdf(data) {
     for (const i in leftHeadData) {
         const key = leftHeadData[i].key;
         const value = leftHeadData[i].value;
-        const IconBytes = await fs.readFile(`images/${key}.png`);
+        const IconBytes = await fs.readFile(`./src/images/${key}.png`);
+        // const IconBytes = await fs.readFile(`images/${key}.png`);
         const Icon = await pdfDoc.embedPng(IconBytes);
         page.drawImage(Icon, {x: 180, y: height - (spacing_y + 3.5), width: Icon.width / 4, height: Icon.height / 4});
         page.drawText(value, {x: 202, y: height - spacing_y, font: fontRegular, size: 9, color: textWhite});
@@ -105,7 +112,8 @@ async function generatePdf(data) {
     for (const i in rightHeadData) {
         const key = rightHeadData[i].key;
         const value = rightHeadData[i].value;
-        const IconBytes = await fs.readFile(`images/${key}.png`);
+        const IconBytes = await fs.readFile(`./src/images/${key}.png`);
+        // const IconBytes = await fs.readFile(`images/${key}.png`);
         const Icon = await pdfDoc.embedPng(IconBytes);
         page.drawImage(Icon, {x: 365, y: height - (spacing_y + 3.5), width: Icon.width / 4, height: Icon.height / 4});
         page.drawText(value, {x: 387, y: height - spacing_y, font: fontRegular, size: 9, color: textWhite});
@@ -164,66 +172,81 @@ async function generatePdf(data) {
     // Calculate the total height of the multiline text
     const totalEducationTextHeight = educationLines * lineHeight;
     let educationOffset = totalEducationTextHeight + 308;
-    if (state.experience.job_title) {
-        educationOffset = (totalEducationTextHeight + 308);
-        page.drawRectangle({x: 230, y: height - (educationOffset + 6), width: 100, height: 20, color: rectangleColor2})
-        page.drawText('Опыт работы', {
-            x: 236,
-            y: height - educationOffset,
-            font: fontBold,
-            size: fontSize,
-            color: textWhite
-        });
-        page.drawText(state.experience.name, {
-            x: 232,
-            y: height - (educationOffset + 24),
-            font: fontSemiBold,
-            size: 10,
-            color: textBlack,
-            maxWidth: 343,
-            lineHeight: 12
-        });
-
-        page.drawText(state.experience.job_title, {
-            x: 232,
-            y: height - (educationOffset + 24 + 14),
-            font: fontSemiBold,
-            size: 8,
-            color: textBlack,
-            maxWidth: 343
-        });
-
-        page.drawText(state.experience.job_description, {
-            x: 232,
-            y: height - (educationOffset + 24 + 14 + 14),
-            font: fontRegular,
-            size: 8,
-            color: textGray,
-            maxWidth: 343,
-            lineHeight: 12
-        });
-
-        let date_from = new Date(state.experience.date_from);
-        let date_to = new Date(state.experience.date_to)
-        let options = {year: 'numeric', month: 'short'};
-        let dateText = `${date_from.toLocaleString('en-US', options)} - ${state.experience.date_to ? date_to.toLocaleString('en-US', options) : "По сей день"}`;
-        textWidth = dateText.length * 4.3;
-        page.drawText(dateText, {
-            x: width - (textWidth + 20),
-            y: height - (educationOffset + 24),
-            font: fontRegular,
-            size: 8,
-            color: textBlue,
-            maxWidth: 343,
-            lineHeight: 12
-        });
+    let experienceLines = 0;
+    if (state.experience.length) {
+        educationOffset += 5;
     }
+    for (let index in state.experience) {
+        let experience = state.experience[index]
+        if (experience.job_title) {
+            if (index == 0) {
+                page.drawRectangle({
+                    x: 230,
+                    y: height - (educationOffset + 6),
+                    width: 100,
+                    height: 20,
+                    color: rectangleColor2
+                })
+                page.drawText('Опыт работы', {
+                    x: 236,
+                    y: height - educationOffset,
+                    font: fontBold,
+                    size: fontSize,
+                    color: textWhite
+                });
+            }
 
-    const experienceText = state.experience.job_description ?? "";
-    const experienceLines = Math.ceil(experienceText.length / 82);
+            page.drawText(experience.name, {
+                x: 232,
+                y: height - (educationOffset + 24),
+                font: fontSemiBold,
+                size: 10,
+                color: textBlack,
+                maxWidth: 343,
+                lineHeight: 12
+            });
+
+            page.drawText(experience.job_title, {
+                x: 232,
+                y: height - (educationOffset + 24 + 14),
+                font: fontSemiBold,
+                size: 8,
+                color: textBlack,
+                maxWidth: 343
+            });
+
+            page.drawText(experience.job_description, {
+                x: 232,
+                y: height - (educationOffset + 24 + 14 + 14),
+                font: fontRegular,
+                size: 8,
+                color: textGray,
+                maxWidth: 343,
+                lineHeight: 12
+            });
+
+            let date_from = new Date(experience.date_from);
+            let date_to = new Date(experience.date_to)
+            let options = {year: 'numeric', month: 'short'};
+            let dateText = `${date_from.toLocaleString('en-US', options)} - ${experience.date_to ? date_to.toLocaleString('en-US', options) : "По сей день"}`;
+            textWidth = dateText.length * 4.3;
+            page.drawText(dateText, {
+                x: width - (textWidth + 20),
+                y: height - (educationOffset + 24),
+                font: fontRegular,
+                size: 8,
+                color: textBlue,
+                maxWidth: 343,
+                lineHeight: 12
+            });
+        }
+        const experienceText = experience.job_description ?? "";
+        experienceLines = Math.ceil(experienceText.length / 82);
+        educationOffset += experienceLines * lineHeight + 24 + 14;
+        console.log(educationOffset);
+    }
     // Calculate the total height of the multiline text
-    const totalExperienceTextHeight = experienceLines * lineHeight + educationOffset + 24 + 14;
-    console.log(totalExperienceTextHeight)
+    const totalExperienceTextHeight = educationOffset + 14;
     let experienceOffset = (totalExperienceTextHeight + 32)
     // certificates section
     if (state.certificate.name) {
@@ -266,7 +289,9 @@ async function generatePdf(data) {
 
     // Save the PDF to a file
     const pdfBytes = await pdfDoc.save();
+    // await fs.writeFile(`./uploads/${file_name}.pdf`, pdfBytes);
     await fs.writeFile(`/var/www/ediploma.kz/uploads/${file_name}.pdf`, pdfBytes);
+    // return `http://localhost:8080/uploads/${file_name}.pdf`;
     return `https://api.ediploma.kz/uploads/${file_name}.pdf`;
 }
 

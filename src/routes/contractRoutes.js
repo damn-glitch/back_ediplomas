@@ -53,6 +53,11 @@ router.post(`/${prefix}/generate`, async (req, res) => {
                 university_id ?? 1,
             ]
         );
+
+        await db.query(
+            `UPDATE diploma_generations
+             SET finished_at = NOW()`
+        );
         console.log('New Diplomas contract created successfully. Contract Address:', contractAddress);
         return res.json(`https://testnet.bscscan.com/address/${contractAddress}`);
     } catch (error) {

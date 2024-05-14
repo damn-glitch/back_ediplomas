@@ -36,10 +36,12 @@ const universityAttributes = [
 router.get(`/${prefix}`, authenticate, async (req, res) => {
     try {
         const universities = await db.query(`
-            SELECT users.id, role_id
+            SELECT users.id, users.role_id
             FROM users
-                     INNER JOIN roles ON users.role_id = roles.id
-            WHERE roles.id = $1
+                INNER JOIN roles ON users.role_id = roles.id
+                INNER JOIN universities ON users.university_id = universities.id    
+            WHERE roles.id = $1 AND
+                  universities.visibility = true
         `, [2,]);
 
         if (universities.rows.length > 0) {

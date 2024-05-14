@@ -5,6 +5,7 @@ const analytics_Button = 3;
 const router = require('./router');
 const {body, validationResult} = require("express-validator");
 const {json} = require("express");
+const bcrypt = require('bcrypt');
 
 const multer = require('multer');
 const path = require('path');
@@ -74,6 +75,8 @@ const userResumeAttributes = [
     "publish_year",
     "field",
     "certificate_name",
+    "work_experience",
+
 ]
 const userAttributes = [
     "first_name",
@@ -153,6 +156,9 @@ const getUserData = async (user_id) => {
             [user_id, key]
         );
         data[key] = attr.rows.length ? attr.rows[0].value : null;
+        if (key == 'work_experience') {
+            data[key] = attr.rows.length ? JSON.parse(attr.rows[0].value) : null;
+        }
     }
     const university = await db.query(`
         select *
@@ -364,7 +370,6 @@ router.post(`/${prefix}/profile`, [
         }
 
         const {attributes} = req.body;
-        console.log(attributes)
 
         const user = await db.query(`
             SELECT users.id,
@@ -380,8 +385,43 @@ router.post(`/${prefix}/profile`, [
         `, [req.user.id]);
 
         if (!user.rows.length) {
-            res.status(404).send('User not found.');
+            return res.status(404).send('User not found.');
         }
+        if (Object.keys(attributes).includes('password')) {
+            try {
+                let password = attributes['password'];
+                let newPassword = attributes['newPassword'];
+                let rePassword = attributes['rePassword'];
+                if (newPassword !== rePassword) {
+                    return res.status(403).send('Passwords are not same');
+                }
+                let authUser = await db.query(`
+                    SELECT users.id,
+                           users.password
+                    FROM users
+                             INNER JOIN roles ON users.role_id = roles.id
+                    WHERE users.id = $1
+                `, [req.user.id]);
+                const validPassword = await bcrypt.compare(password, authUser.rows[0].password);
+
+                if (!validPassword) {
+                    return res.status(403).send('Previous password is incorrect');
+                }
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+                await db.query(
+                    `update users
+                     set password = $1
+                     where id = $2`,
+                    [hashedPassword, req.user.id,]);
+
+            } catch (error) {
+                console.log(error);
+                return res.status(500).send('Error updating password account.');
+            }
+        }
+
 
         try {
             //update attributes
@@ -620,9 +660,11 @@ router.get(
         try {
             const users = await db.query(
                 `
-                    SELECT *
+                    SELECT users.*
                     FROM users
+                             INNER JOIN universities ON users.university_id = universities.id
                     WHERE role_id = 2
+                      AND universities.visibility = true
                 `
             );
 
@@ -644,8 +686,6 @@ router.put(
     `/${prefix}/visibility`,
     authenticate,
     async (req, res) => {
-        console.log('hello visible');
-        console.log(req.body.visibility);
         try {
             const user = await db.query(`
                 SELECT users.id, role_id
@@ -654,18 +694,15 @@ router.put(
                 WHERE users.id = $1
             `, [req.user.id]);
 
-            console.log(user.rows);
 
             if (user.rows.length > 0) {
                 let role = user.rows[0].role_id;
 
                 if (role == 3) {
-                    console.log('user is student');
                     const query = `UPDATE diplomas
                                    SET visibility = $1
                                    WHERE id = $2 RETURNING *`;
                     const result = await db.query(query, [req.body.visibility, user.rows[0].id]);
-                    console.log(result.rows);
 
                     if (result.rows.length > 0) {
                         return res.status(200).send({message: 'User updated successfully.'});
@@ -828,13 +865,7 @@ router.get(
                     "date_to": data["year"],
                     "speciality": data["speciality_ru"]
                 },
-                "experience": {
-                    "name": data["company_name"],
-                    "job_title": data["desired_job_position"],
-                    "date_from": data["experience_start"],
-                    "date_to": data["experience_still_working"] ? null : data["experience_end"],
-                    "job_description": data["responsibility"] ?? "",
-                },
+                "experience": data["work_experience"] ? Object.values(data['work_experience']) : [],
                 "certificate": {
                     "name": data["certificate_name"],
                     "dates": data["publish_year"],
