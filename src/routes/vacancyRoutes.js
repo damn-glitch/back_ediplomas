@@ -3,6 +3,7 @@ const {authenticate} = require('../middleware/authenticate');
 const db = require('../config/database');
 const router = require('./router');
 const {body, validationResult} = require("express-validator");
+const socketIoService = require('../socket.io.service');
 
 const prefix = "vacancy";
 
@@ -62,6 +63,12 @@ router.post(
                 INSERT INTO applications (student_id, employer_id, status, created_at)
                 VALUES ($1, $2, $3, $4)
             `, [req.user.id, employer, "processing", currentTimeStamp]);
+
+            const io = socketIoService.getInstance();
+            io.to(`employer-${employer}`).emit('new-application', {
+                studentId: req.user.id,
+            });
+            console.log('New application from student:', req.user.id);
 
             return res.status(201).send('Application submitted.');
         } catch (error) {

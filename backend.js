@@ -1,4 +1,5 @@
 const express = require('express');
+const { Server } = require('socket.io');
 const bodyParser = require('body-parser');
 const app = express();
 const cors = require('cors');
@@ -25,6 +26,8 @@ const analyticsRoutes = require('./src/routes/analyticsRoutes');
 const createUsers = require('./src/routes/createUsers');
 const vacancyRoutes = require('./src/routes/vacancyRoutes');
 const db = require('./src/config/database');
+
+const socketIoService = require('./src/socket.io.service');
 
 
 app.use(bodyParser.json({limit: '10mb'}));
@@ -72,9 +75,11 @@ const startServer = async () => {
 
         console.log(formattedDate);
 
-        app.listen(port, () => {
+        const server = app.listen(port, () => {
             console.log(`Server is running on port ${port}`, formattedDate);
         });
+
+        socketIoService.init(server);
     } catch (error) {
         console.error('Error:', error);
     }

@@ -166,8 +166,8 @@ const getUserData = async (user_id) => {
     return data;
 }
 
-const getEmployerData = async (user_id) => {
-    const user = await db.query(`
+const getEmployersData = async (userIds) => {
+    const usersData = await db.query(`
         SELECT users.id,
                users.first_name,
                users.last_name,
@@ -178,24 +178,24 @@ const getEmployerData = async (user_id) => {
                roles.name as role
         FROM users
                  INNER JOIN roles ON users.role_id = roles.id
-        WHERE users.id = $1
-    `, [user_id]);
+        WHERE users.id = ANY($1::int[])
+    `, [userIds]);
 
-    if (!user.rows.length) {
-        return [];
-    }
-    let data = user.rows[0];
-    for (let i = 0; i < employerAttributes.length; i++) {
-        const key = employerAttributes[i];
-        if (user.rows[0][key] !== undefined) continue;
-        let attr = await db.query(
-            'select * from content_fields where content_id = $1 and type = $2',
-            [user_id, key]
-        );
-        data[key] = attr.rows.length ? attr.rows[0].value : null;
+    const userMap = new Map(usersData.rows.map(user => [user.id, user]));
+
+    const attributesData = await db.query(`
+        SELECT content_id, type, value
+        FROM content_fields
+        WHERE content_id = ANY($1::int[])
+    `, [userIds]);
+
+    for (let attr of attributesData.rows) {
+        if (!userMap.get(attr.content_id)[attr.type]) {
+            userMap.get(attr.content_id)[attr.type] = attr.value;
+        }
     }
 
-    return data;
+    return Array.from(userMap.values());
 };
 
 const getDiplomaData = async (user_id) => {
@@ -739,13 +739,16 @@ router.get(
             const users = await db.query(`SELECT *
                                           FROM users
                                           WHERE role_id = 1`);
-
-            for (let i = 0; i < users.rows.length; i++) {
-                let data = await getEmployerData(users.rows[i].id);
-                users.rows[i] = data;
+            
+            if (!users.rows.length) {
+                return res.status(200).json([]);
             }
 
-            return res.status(200).json(users.rows);
+            const userIds = users.rows.map(user => user.id);
+
+            const employersData = await getEmployersData(userIds);
+
+            return res.status(200).json(employersData);
         } catch (error) {
             console.error("Error getting users:", error);
             return res.status(500).send("Error getting users.");
