@@ -8,7 +8,7 @@ router.post(`/${prefix}/generate`, async (req, res) => {
     const ethers = require('ethers');
 
     // Ethereum provider URL for Binance Smart Chain
-    const providerUrl = 'https://warmhearted-small-firefly.bsc-testnet.quiknode.pro/5c446e722477d15baab0625234961809b8976385/'; // BSC Testnet
+    const providerUrl = 'https://tiniest-delicate-morning.bsc-testnet.quiknode.pro/ffe706f4e1cfb71f67d309fde115912917d40dd1/'; // BSC Testnet
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
     // FactoryInvest contract address and ABI
@@ -52,6 +52,13 @@ router.post(`/${prefix}/generate`, async (req, res) => {
                 `https://testnet.bscscan.com/address/${contractAddress}`,
                 university_id ?? 1,
             ]
+        );
+        await db.query(
+            `UPDATE diploma_generations
+             SET finished_at = now()
+             WHERE university_id = $1
+               AND finished_at is null`,
+            [ university_id ?? 1,]
         );
         console.log('New Diplomas contract created successfully. Contract Address:', contractAddress);
         return res.json(`https://testnet.bscscan.com/address/${contractAddress}`);

@@ -103,10 +103,22 @@ router.get(`/${prefix}/:diploma_id`, async (req, res) => {
         }
         const diplomaId = diplomaItem.rows[0].id;
         const diplomaFields = await getDiplomaFields(diplomaId);
-        const diploma = {...diplomaItem.rows[0], ...diplomaFields};
+        let diploma = {...diplomaItem.rows[0], ...diplomaFields};
         if (diploma['image'].split(',').length > 1) {
             diploma['image'] = diploma['image'].replace(' ', '').split(',');
         }
+        /* university name start */
+        const university = await db.query(`
+            SELECT name
+            FROM universities
+            WHERE id = $1
+              AND visibility = true
+        `, [diploma.university_id,]);
+        if (university.rows.length) {
+            diploma = {...diploma, university_name: university.rows[0].name};
+        }
+
+        /* university name end */
         return res.json(diploma);
     } catch (error) {
         return res.status(500).json({error: error});
