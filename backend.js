@@ -1,6 +1,5 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const {Client} = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
@@ -9,24 +8,59 @@ const {body, validationResult} = require('express-validator');
 const app = express();
 
 const fs = require('fs');
-const {Pool} = require('pg');
 const axios = require("axios");
-const caCert = fs.readFileSync('ca-certificate.crt');
 
-const db = new Client({
-    host: 'app-43e769b3-e8b1-4072-b097-9e5a2dea2499-do-user-14279801-0.b.db.ondigitalocean.com',
-    port: 25060,
-    database: 'db',
-    user: 'db',
-    password: 'AVNS_ggbxdEEyvuBkDaQeqFQ',
-    ssl: {
-        ca: caCert,
+// Используем БД из config/database.js (как и все роуты)
+const db = require('./src/config/database');
+
+// Настройка CORS для разрешения запросов от KazSmartChain и локальной разработки
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Разрешенные origins
+        const allowedOrigins = [
+            'https://testnet.kazsmartchain.org',
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://localhost:3002',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:3001',
+            // Добавьте другие origins по необходимости
+        ];
+        
+        // Разрешаем запросы без origin (например, Postman, curl)
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.warn(`CORS blocked origin: ${origin}`);
+            callback(null, true); // Разрешаем все для разработки, можно изменить на false для продакшена
+        }
     },
-});
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
+};
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(bodyParser.json({limit: '10mb'}));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
+
+// Подключение роутов из папки routes
+const router = require('./src/routes/router');
+// Импортируем все роуты (они автоматически регистрируются в router)
+require('./src/routes/authRoutes');
+require('./src/routes/diplomaRoutes');
+require('./src/routes/graduateRoutes');
+require('./src/routes/universityRoutes');
+require('./src/routes/userRoutes');
+require('./src/routes/otpRoutes');
+require('./src/routes/validateIINRoutes');
+require('./src/routes/vacancyRoutes');
+require('./src/routes/contractRoutes');
+require('./src/routes/analyticsRoutes');
+require('./src/routes/createUsers');
+
+app.use('/', router);
+
 // Initialize the database
 db.connect()
     .then(() => {
@@ -149,13 +183,24 @@ db.connect()
             });
 
         // Start the server
-        const port = 8080;
+        const port = 8081;
         app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
+            console.log(`API endpoint available at: http://localhost:${port}/diploma/verify-by-iin/:iin`);
         });
     })
     .catch((error) => {
         console.error('Error connecting to the PostgreSQL database:', error);
+        console.warn('⚠️  Server will start anyway, but database operations will fail.');
+        console.warn('⚠️  Make sure database is accessible for full functionality.');
+        
+        // Запускаем сервер даже если БД недоступна (для тестирования endpoint)
+        const port = 8081;
+        app.listen(port, () => {
+            console.log(`Server is running on port ${port} (without database connection)`);
+            console.log(`API endpoint available at: http://localhost:${port}/diploma/verify-by-iin/:iin`);
+            console.warn('⚠️  Note: Endpoint will return errors until database is connected.');
+        });
     });
 
 // Middleware for authentication

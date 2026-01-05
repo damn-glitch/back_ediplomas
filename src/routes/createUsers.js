@@ -1,6 +1,6 @@
 const db = require('../config/database');
 const router = require('./router');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const axios = require("axios");
 const {body, validationResult} = require("express-validator");
 const prefix = "temp"

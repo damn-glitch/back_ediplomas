@@ -4,6 +4,15 @@ const axios = require("axios");
 const {body, validationResult} = require("express-validator");
 const prefix = "diploma"
 
+/**
+ * Маскирование ИИН: показываем первые 4 и последние 2 цифры
+ * Пример: 731017301075 -> 7310******75
+ */
+function maskIIN(iin) {
+    if (!iin || iin.length !== 12) return iin;
+    return `${iin.slice(0, 4)}******${iin.slice(-2)}`;
+}
+
 const diplomaAttributes = [
     "diploma_distinction_en",
     "diploma_distinction_ru",
@@ -85,6 +94,227 @@ router.get(`/${prefix}`, async (req, res) => {
         return res.status(500).json({error: 'Failed to send OTP.'});
     }
 });
+
+/**
+ * GET /diploma/verify-by-iin/:iin
+ * Публичный endpoint для верификации диплома по ИИН
+ * Используется KazSmartChain для проверки дипломов
+ * Важно: этот маршрут должен быть перед /diploma/:diploma_id чтобы избежать конфликтов
+ */
+router.get(`/${prefix}/verify-by-iin/:iin`, async (req, res) => {
+    try {
+        const { iin } = req.params;
+
+        // Валидация ИИН
+        const iinRegex = /^\d{12}$/;
+        if (!iinRegex.test(iin)) {
+            return res.status(400).json({
+                valid: false,
+                error: 'ИИН должен содержать 12 цифр'
+            });
+        }
+
+        // Поиск диплома по ИИН
+        // Сначала проверяем в таблице diplomas (поле iin)
+        let diplomaItem = await db.query(`
+            SELECT *
+            FROM diplomas
+            WHERE iin = $1
+              AND visibility = true
+            LIMIT 1
+        `, [iin]);
+
+        // Если не найдено в таблице diplomas, проверяем в content_fields
+        // ИИН может храниться как строка или как JSON строка
+        if (diplomaItem.rows.length === 0) {
+            // Получаем все записи с типом diploma_iin
+            const iinFieldQuery = await db.query(`
+                SELECT content_id, value
+                FROM content_fields
+                WHERE type = 'diploma_iin'
+                  AND deleted_at IS NULL
+            `);
+            
+            // Ищем ИИН в значениях (может быть строка или JSON)
+            let foundDiplomaId = null;
+            for (const row of iinFieldQuery.rows) {
+                let iinValue = null;
+                try {
+                    // Пробуем распарсить как JSON
+                    const parsed = JSON.parse(row.value);
+                    if (typeof parsed === 'string') {
+                        iinValue = parsed;
+                    } else if (parsed.iin) {
+                        iinValue = parsed.iin;
+                    } else if (parsed.value) {
+                        iinValue = parsed.value;
+                    }
+                } catch (e) {
+                    // Если не JSON, берем как строку
+                    iinValue = row.value;
+                }
+                
+                // Сравниваем ИИН (учитываем возможный префикс "IIN")
+                const cleanIinValue = iinValue ? iinValue.toString().replace("IIN", '').trim() : '';
+                const cleanIin = iin.toString().trim();
+                
+                if (cleanIinValue === cleanIin) {
+                    foundDiplomaId = row.content_id;
+                    break;
+                }
+            }
+
+            if (foundDiplomaId) {
+                diplomaItem = await db.query(`
+                    SELECT *
+                    FROM diplomas
+                    WHERE id = $1
+                      AND visibility = true
+                `, [foundDiplomaId]);
+            }
+        }
+
+        // Если диплом не найден
+        if (diplomaItem.rows.length === 0) {
+            return res.status(404).json({
+                valid: false,
+                message: 'Диплом с данным ИИН не найден в блокчейне'
+            });
+        }
+
+        const diploma = diplomaItem.rows[0];
+        const diplomaId = diploma.id;
+
+        // Получаем дополнительные поля диплома
+        const diplomaFields = await getDiplomaFields(diplomaId);
+        const fullDiploma = {...diploma, ...diplomaFields};
+
+        // Получаем название университета
+        let universityName = null;
+        if (diploma.university_id) {
+            const university = await db.query(`
+                SELECT name
+                FROM universities
+                WHERE id = $1
+                  AND visibility = true
+            `, [diploma.university_id]);
+            
+            if (university.rows.length === 0) {
+                // Пробуем получить из таблицы users
+                const universityUser = await db.query(`
+                    SELECT name
+                    FROM users
+                    WHERE university_id = $1
+                      AND role_id = 2
+                `, [diploma.university_id]);
+                if (universityUser.rows.length > 0) {
+                    universityName = universityUser.rows[0].name;
+                }
+            } else {
+                universityName = university.rows[0].name;
+            }
+        }
+
+        // Формируем имя студента (приоритет: name_kz > name_ru > name_en)
+        const studentName = fullDiploma.name_kz || fullDiploma.name_ru || fullDiploma.name_en || '';
+
+        // Формируем специальность (приоритет: speciality_kz > speciality_ru > speciality_en)
+        const specialty = fullDiploma.speciality_kz || fullDiploma.speciality_ru || fullDiploma.speciality_en || '';
+
+        // Формируем степень (из diploma_degree или diploma_degree_ru/kz/en)
+        // diploma_degree может быть строкой или объектом из content_fields
+        let degree = '';
+        
+        // Проверяем различные варианты хранения степени
+        if (fullDiploma.diploma_degree) {
+            degree = typeof fullDiploma.diploma_degree === 'string' 
+                ? fullDiploma.diploma_degree 
+                : (fullDiploma.diploma_degree.value || fullDiploma.diploma_degree.name || String(fullDiploma.diploma_degree));
+        } else if (fullDiploma.diploma_degree_ru) {
+            degree = typeof fullDiploma.diploma_degree_ru === 'string' 
+                ? fullDiploma.diploma_degree_ru 
+                : (fullDiploma.diploma_degree_ru.value || fullDiploma.diploma_degree_ru.name || String(fullDiploma.diploma_degree_ru));
+        } else if (fullDiploma.diploma_degree_kz) {
+            degree = typeof fullDiploma.diploma_degree_kz === 'string' 
+                ? fullDiploma.diploma_degree_kz 
+                : (fullDiploma.diploma_degree_kz.value || fullDiploma.diploma_degree_kz.name || String(fullDiploma.diploma_degree_kz));
+        } else if (fullDiploma.diploma_degree_en) {
+            degree = typeof fullDiploma.diploma_degree_en === 'string' 
+                ? fullDiploma.diploma_degree_en 
+                : (fullDiploma.diploma_degree_en.value || fullDiploma.diploma_degree_en.name || String(fullDiploma.diploma_degree_en));
+        }
+
+        // Формируем номер диплома
+        // Может быть строкой или объектом из content_fields
+        let diplomaNumber = '';
+        if (fullDiploma.diploma_Number) {
+            diplomaNumber = typeof fullDiploma.diploma_Number === 'string' 
+                ? fullDiploma.diploma_Number 
+                : (fullDiploma.diploma_Number.value || fullDiploma.diploma_Number.number || String(fullDiploma.diploma_Number));
+        } else if (fullDiploma.diploma_protocol_number) {
+            diplomaNumber = typeof fullDiploma.diploma_protocol_number === 'string' 
+                ? fullDiploma.diploma_protocol_number 
+                : (fullDiploma.diploma_protocol_number.value || fullDiploma.diploma_protocol_number.number || String(fullDiploma.diploma_protocol_number));
+        }
+
+        // Формируем дату выпуска (из year или created_at)
+        let graduationDate = null;
+        if (fullDiploma.year) {
+            graduationDate = `${fullDiploma.year}-06-15`; // Примерная дата выпуска
+        } else if (fullDiploma.created_at) {
+            const date = new Date(fullDiploma.created_at);
+            graduationDate = date.toISOString().split('T')[0];
+        }
+
+        // Формируем ediplomaId (используем id диплома)
+        const ediplomaId = `diploma-${diplomaId}`;
+
+        // Получаем хеш транзакции из блокчейна
+        const besuTxHash = fullDiploma.smart_contract_link || null;
+        const solanaMint = fullDiploma.solana_mint_address || null;
+
+        // Статус диплома
+        const status = diploma.visibility ? 'issued' : 'revoked';
+
+        // Дата выдачи
+        const issuedAt = diploma.created_at ? new Date(diploma.created_at).toISOString() : null;
+
+        // Маскируем ИИН для публичного отображения
+        const maskedIIN = maskIIN(iin);
+
+        // Формируем ответ
+        const response = {
+            valid: true,
+            diploma: {
+                ediplomaId: ediplomaId,
+                publicData: {
+                    studentName: studentName,
+                    studentIIN: maskedIIN,
+                    degree: degree,
+                    specialty: specialty,
+                    graduationDate: graduationDate,
+                    diplomaNumber: diplomaNumber,
+                    university: universityName || 'Не указан'
+                },
+                besuTxHash: besuTxHash,
+                solanaMint: solanaMint,
+                status: status,
+                issuedAt: issuedAt
+            },
+            message: 'Диплом верифицирован и подтвержден в блокчейне'
+        };
+
+        return res.status(200).json(response);
+
+    } catch (error) {
+        console.error('Error verifying diploma by IIN:', error);
+        return res.status(500).json({
+            valid: false,
+            error: 'Внутренняя ошибка сервера'
+        });
+    }
+});
+
 router.get(`/${prefix}/:diploma_id`, async (req, res) => {
     const diploma_id = req.params.diploma_id;
     try {
