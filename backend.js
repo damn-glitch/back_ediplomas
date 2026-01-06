@@ -24,6 +24,7 @@ const corsOptions = {
             'http://localhost:3002',
             'http://127.0.0.1:3000',
             'http://127.0.0.1:3001',
+            'https://app.ediploma.kz',
             // Добавьте другие origins по необходимости
         ];
         
@@ -183,7 +184,7 @@ db.connect()
             });
 
         // Start the server
-        const port = 8081;
+        const port = 8080;
         app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
             console.log(`API endpoint available at: http://localhost:${port}/diploma/verify-by-iin/:iin`);
@@ -195,7 +196,7 @@ db.connect()
         console.warn('⚠️  Make sure database is accessible for full functionality.');
         
         // Запускаем сервер даже если БД недоступна (для тестирования endpoint)
-        const port = 8081;
+        const port = 8080;
         app.listen(port, () => {
             console.log(`Server is running on port ${port} (without database connection)`);
             console.log(`API endpoint available at: http://localhost:${port}/diploma/verify-by-iin/:iin`);
