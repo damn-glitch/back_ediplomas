@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const {body, validationResult} = require('express-validator');
-
+const path = require('path');
 const app = express();
 
 const fs = require('fs');
@@ -40,7 +40,7 @@ const corsOptions = {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
 };
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors(corsOptions));
 app.use(bodyParser.json({limit: '10mb'}));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
@@ -280,8 +280,8 @@ app.post(
 
             // Save the new user
             const newUser = await db.query(
-                'INSERT INTO users (email, password, company_name, role_id, email_validated) VALUES ($1, $2, $3, 1, false) RETURNING *',
-                [email, hashedPassword, companyName]
+                'INSERT INTO users (email, password, role_id, email_validated) VALUES ($1, $2, 1, false) RETURNING *',
+                [email, hashedPassword]
             );
 
         } catch (error) {
@@ -468,7 +468,7 @@ app.get('/graduate-details', authenticate, async (req, res) => {
 app.get('/account', authenticate, async (req, res) => {
     try {
         const user = await db.query(`
-            SELECT id, email, company_name, role_id
+            SELECT id, email, '' as company_name, role_id
             FROM users
             INNER JOIN roles ON users.role_id = roles.id
             WHERE id = $1
@@ -509,16 +509,16 @@ app.put('/account', authenticate, async (req, res) => {
     }
 
     try {
-        const result = await db.query(
-            'UPDATE users SET company_name = $1 WHERE id = $2 RETURNING *',
-            [companyName, req.user.id]
-        );
+        // const result = await db.query(
+        //     'UPDATE users SET company_name = $1 WHERE id = $2 RETURNING *',
+        //     [companyName, req.user.id]
+        // );
 
-        if (result.rows.length > 0) {
+        // if (result.rows.length > 0) {
             res.send({message: 'User updated successfully.'});
-        } else {
-            res.status(404).send('User not found.');
-        }
+        // } else {
+        //     res.status(404).send('User not found.');
+        // }
     } catch (error) {
         console.error('Error updating user account:', error);
         res.status(500).send('Error updating user account.');
